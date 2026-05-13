@@ -6,10 +6,12 @@ import {
   useNavigate,
 } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
+import LoginModal from "./components/LoginModal";
 import MenteeAuthOnboarding from "./components/MenteeAuthOnboarding";
 import MentorOnboarding from "./components/MentorOnboarding";
 import MenteeDashboard from "./components/MenteeDashboard";
 import MentorDashboard from "./components/MentorDashboard";
+import { fetchMe } from "./lib/api/auth";
 
 function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
   const navigate = useNavigate();
@@ -31,6 +33,21 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
   return (
     <Routes>
       <Route path="/" element={<LandingPage onNavigate={handleNavigation} />} />
+      <Route
+        path="/login"
+        element={
+          <LoginModal
+            onBack={() => handleNavigation("/")}
+            onComplete={(data) => {
+              if (data?.role === "MENTEE") {
+                handleNavigation("/mentee-dashboard", data);
+              } else {
+                handleNavigation("/mentor-dashboard", data);
+              }
+            }}
+          />
+        }
+      />
       <Route
         path="/onboarding"
         element={
@@ -76,16 +93,27 @@ function App() {
   const [mentorData, setMentorData] = useState(null);
 
   useEffect(() => {
-    const savedMenteeData = localStorage.getItem("menteeData");
-    const savedMentorData = localStorage.getItem("mentorData");
     const savedPage = localStorage.getItem("currentPage");
 
-    if (savedMenteeData) {
-      setMenteeData(JSON.parse(savedMenteeData));
+    const savedMenteeData = localStorage.getItem("menteeData");
+    const savedMentorData = localStorage.getItem("mentorData");
+
+    if (savedMenteeData) setMenteeData(JSON.parse(savedMenteeData));
+    if (savedMentorData) setMentorData(JSON.parse(savedMentorData));
+
+    const idToken = localStorage.getItem("idToken");
+    if (idToken) {
+      fetchMe()
+        .then((res) => {
+          const user = res.user;
+          if (user?.role === "MENTEE") setMenteeData(user);
+          if (user?.role === "MENTOR") setMentorData(user);
+        })
+        .catch(() => {
+          // ignore, token may be invalid/expired
+        });
     }
-    if (savedMentorData) {
-      setMentorData(JSON.parse(savedMentorData));
-    }
+
     if (savedPage) {
       window.location.hash = `#${savedPage}`;
     }

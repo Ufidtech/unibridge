@@ -1,49 +1,57 @@
-import { useState } from 'react';
+import { useState } from "react";
+import { registerMentor } from "../lib/api/auth";
 
-export default function MentorOnboarding({ onBack = () => {}, onComplete = () => {} }) {
+export default function MentorOnboarding({
+  onBack = () => {},
+  onComplete = () => {},
+}) {
   const [formData, setFormData] = useState({
-    fullName: '',
-    university: '',
-    level: '',
-    bio: '',
+    fullName: "",
+    email: "",
+    password: "",
+    university: "",
+    level: "",
+    bio: "",
     expertise: [],
-    availability: '',
+    availability: "",
     avatarFile: null,
     transcriptFile: null,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const universities = [
-    'Federal University of Technology Minna',
-    'University of Lagos',
-    'University of Ibadan',
-    'Covenant University',
-    'Lagos State University',
-    'Ahmadu Bello University',
-    'Obafemi Awolowo University',
-    'University of Nigeria',
-    'Other',
+    "Federal University of Technology Minna",
+    "University of Lagos",
+    "University of Ibadan",
+    "Covenant University",
+    "Lagos State University",
+    "Ahmadu Bello University",
+    "Obafemi Awolowo University",
+    "University of Nigeria",
+    "Other",
   ];
 
-  const levels = ['100L', '200L', '300L', '400L'];
+  const levels = ["100L", "200L", "300L", "400L"];
 
   const availabilityOptions = [
-    'Not Available',
-    '1-2 hours/week',
-    '3-4 hours/week',
-    '5+ hours/week',
+    "Not Available",
+    "1-2 hours/week",
+    "3-4 hours/week",
+    "5+ hours/week",
   ];
 
   const expertiseTags = [
-    '1st Class Strategy',
-    'ReactJS',
-    'Hostel Survival',
-    'JAMB Prep',
-    'Course Selection',
-    'Time Management',
-    'Leadership',
-    'Networking',
-    'Coding Fundamentals',
-    'Career Planning',
+    "1st Class Strategy",
+    "ReactJS",
+    "Hostel Survival",
+    "JAMB Prep",
+    "Course Selection",
+    "Time Management",
+    "Leadership",
+    "Networking",
+    "Coding Fundamentals",
+    "Career Planning",
   ];
 
   const handleInputChange = (e) => {
@@ -75,6 +83,10 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
   const canSubmit = () => {
     return (
       formData.fullName &&
+      formData.email &&
+      formData.email.includes("@") &&
+      formData.password &&
+      formData.password.length >= 8 &&
       formData.university &&
       formData.level &&
       formData.bio &&
@@ -85,18 +97,29 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
 
   const handleSubmit = () => {
     if (canSubmit()) {
-      console.log('Mentor Profile Data:', formData);
-      // Pass mentor data to dashboard
-      const mentorData = {
+      setLoading(true);
+      setError(null);
+
+      const payload = {
         name: formData.fullName,
-        role: 'Mentor',
+        email: formData.email,
+        password: formData.password,
         university: formData.university,
         level: formData.level,
         bio: formData.bio,
-        expertise: formData.expertise,
-        availability: formData.availability,
+        skills: formData.expertise,
+        selectedVibes: [],
       };
-      onComplete(mentorData);
+
+      registerMentor(payload)
+        .then(({ user }) => {
+          try {
+            localStorage.setItem("mentorData", JSON.stringify(user));
+          } catch {}
+          onComplete(user);
+        })
+        .catch((err) => setError(err.message || "Registration failed"))
+        .finally(() => setLoading(false));
     }
   };
 
@@ -116,9 +139,7 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
           <h1 className="text-4xl md:text-5xl font-bold text-slate-100 mb-3">
             Join as a Mentor.
           </h1>
-          <p className="text-lg text-slate-400">
-            Inspire the next generation.
-          </p>
+          <p className="text-lg text-slate-400">Inspire the next generation.</p>
         </div>
 
         {/* Form Container */}
@@ -186,6 +207,36 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
                   />
                 </div>
 
+                {/* Email */}
+                <div className="mb-4">
+                  <label className="block text-slate-300 font-semibold mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="you@example.com"
+                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-2">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Min. 8 characters"
+                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                  />
+                </div>
+
                 {/* University */}
                 <div className="mb-4">
                   <label className="block text-slate-300 font-semibold mb-2">
@@ -241,7 +292,8 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
                 Short Bio *
               </label>
               <p className="text-sm text-slate-400 mb-3">
-                Tell mentees about yourself, your achievements, and why they should learn from you.
+                Tell mentees about yourself, your achievements, and why they
+                should learn from you.
               </p>
               <textarea
                 name="bio"
@@ -285,7 +337,7 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
                   <p className="text-slate-300 font-medium">
                     {formData.transcriptFile
                       ? formData.transcriptFile.name
-                      : 'Click to upload or drag and drop'}
+                      : "Click to upload or drag and drop"}
                   </p>
                   <p className="text-xs text-slate-400 mt-1">
                     PDF, JPG, or PNG (max 10MB)
@@ -314,8 +366,8 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
                     onClick={() => toggleExpertise(tag)}
                     className={`px-4 py-2 rounded-lg font-medium transition ${
                       formData.expertise.includes(tag)
-                        ? 'bg-blue-600 text-white shadow-lg'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
+                        ? "bg-blue-600 text-white shadow-lg"
+                        : "bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
                     }`}
                   >
                     {tag}
@@ -346,6 +398,12 @@ export default function MentorOnboarding({ onBack = () => {}, onComplete = () =>
           </div>
 
           {/* Footer Button */}
+          {/* Error Message - Display when error occurs */}
+          {error && (
+            <div className="p-4 mb-4 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
+              {error}
+            </div>
+          )}
           <button
             type="button"
             onClick={handleSubmit}

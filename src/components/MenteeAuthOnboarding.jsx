@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState } from "react";
+import { registerMentee } from "../lib/api/auth";
 
-export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = () => {} }) {
+export default function MenteeAuthOnboarding({
+  onBack = () => {},
+  onComplete = () => {},
+}) {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    studentClass: '',
-    dreamCourse: '',
+    fullName: "",
+    email: "",
+    password: "",
+    studentClass: "",
+    dreamCourse: "",
     selectedVibes: [],
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const totalSteps = 3;
 
@@ -27,7 +33,7 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
   const handleClassSelect = (className) => {
     setFormData((prev) => ({
       ...prev,
-      studentClass: prev.studentClass === className ? '' : className,
+      studentClass: prev.studentClass === className ? "" : className,
     }));
   };
 
@@ -46,7 +52,7 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
     if (currentStep === 1) {
       return (
         formData.fullName.trim() &&
-        formData.email.includes('@') &&
+        formData.email.includes("@") &&
         formData.password.length >= 8
       );
     }
@@ -74,17 +80,30 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
   };
 
   const handleSubmit = () => {
-    if (canProceedNext()) {
-      console.log('Complete Registration Data:', formData);
-      const userData = {
-        name: formData.fullName,
-        email: formData.email,
-        level: formData.studentClass,
-        dreamCourse: formData.dreamCourse,
-        interests: formData.selectedVibes,
-      };
-      onComplete(userData);
-    }
+    if (!canProceedNext()) return;
+
+    setLoading(true);
+    setError(null);
+
+    const payload = {
+      name: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      school: null,
+      classLevel: formData.studentClass,
+      dreamCourse: formData.dreamCourse,
+      selectedVibes: formData.selectedVibes,
+    };
+
+    registerMentee(payload)
+      .then(({ user }) => {
+        try {
+          localStorage.setItem("menteeData", JSON.stringify(user));
+        } catch {}
+        onComplete(user);
+      })
+      .catch((err) => setError(err.message || "Registration failed"))
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -96,9 +115,9 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-xl font-bold text-white">
-                {currentStep === 1 && 'Create Your Account'}
-                {currentStep === 2 && 'Tell Us About You'}
-                {currentStep === 3 && 'What Interests You?'}
+                {currentStep === 1 && "Create Your Account"}
+                {currentStep === 2 && "Tell Us About You"}
+                {currentStep === 3 && "What Interests You?"}
               </h1>
               <span className="text-sm text-slate-400">
                 Step {currentStep} of {totalSteps}
@@ -117,7 +136,7 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
             onClick={handleBack}
             className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 text-sm"
           >
-            ← {currentStep > 1 ? 'Back' : 'Back to Home'}
+            ← {currentStep > 1 ? "Back" : "Back to Home"}
           </button>
         </div>
       </div>
@@ -130,7 +149,10 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
             <div className="space-y-6">
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   Full Name
                 </label>
                 <input
@@ -146,7 +168,10 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   Email Address
                 </label>
                 <input
@@ -162,12 +187,15 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
 
               {/* Password with Visibility Toggle */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   Password
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     id="password"
                     name="password"
                     value={formData.password}
@@ -181,7 +209,11 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
                     className="absolute right-3 top-3 text-slate-400 hover:text-slate-300 transition"
                   >
                     {showPassword ? (
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                         <path
                           fillRule="evenodd"
@@ -190,7 +222,11 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
                         />
                       </svg>
                     ) : (
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path
                           fillRule="evenodd"
                           d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
@@ -205,25 +241,25 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
 
               {/* Sign In Link */}
               <p className="text-center text-sm text-slate-400">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <button className="text-blue-500 hover:text-blue-400 font-medium transition">
                   Sign in
                 </button>
               </p>
-                {/* Error Message */}
-                {error && (
-                  <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
-                    {error}
-                  </div>
-                )}
+              {/* Error Message */}
+              {error && (
+                <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
+                  {error}
+                </div>
+              )}
 
-                {/* Sign In Link */}
-                <p className="text-center text-sm text-slate-400">
-                  Already have an account?{' '}
-                  <button className="text-blue-500 hover:text-blue-400 font-medium transition">
-                    Sign in
-                  </button>
-                </p>
+              {/* Sign In Link */}
+              {/* <p className="text-center text-sm text-slate-400">
+              Already have an account?{" "}
+              <button className="text-blue-500 hover:text-blue-400 font-medium transition">
+                Sign in
+              </button>
+            </p> */}
             </div>
           )}
 
@@ -237,9 +273,13 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
                     <span className="text-white font-bold text-sm">UB</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-300 mb-1">Unibridge AI</p>
+                    <p className="font-semibold text-slate-300 mb-1">
+                      Unibridge AI
+                    </p>
                     <p className="text-slate-300 leading-relaxed">
-                      Hi {formData.fullName}! 👋 To match you with the best mentors, what class are you in and what is your dream course?
+                      Hi {formData.fullName}! 👋 To match you with the best
+                      mentors, what class are you in and what is your dream
+                      course?
                     </p>
                   </div>
                 </div>
@@ -251,14 +291,14 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
                   What class are you in?
                 </label>
                 <div className="flex flex-wrap gap-3">
-                  {['JSS3', 'SS1', 'SS2', 'SS3', 'JAMBite'].map((className) => (
+                  {["JSS3", "SS1", "SS2", "SS3", "JAMBite"].map((className) => (
                     <button
                       key={className}
                       onClick={() => handleClassSelect(className)}
                       className={`px-4 py-2 rounded-full font-medium transition ${
                         formData.studentClass === className
-                          ? 'bg-blue-600 text-white border border-blue-500'
-                          : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-blue-500'
+                          ? "bg-blue-600 text-white border border-blue-500"
+                          : "bg-slate-900 text-slate-300 border border-slate-800 hover:border-blue-500"
                       }`}
                     >
                       {className}
@@ -269,7 +309,10 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
 
               {/* Dream Course Input */}
               <div>
-                <label htmlFor="dreamCourse" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="dreamCourse"
+                  className="block text-sm font-medium text-slate-300 mb-2"
+                >
                   What is your dream course?
                 </label>
                 <input
@@ -289,26 +332,27 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
           {currentStep === 3 && (
             <div className="space-y-6">
               <p className="text-slate-300">
-                Select the topics that interest you most. These help us personalize your mentorship experience.
+                Select the topics that interest you most. These help us
+                personalize your mentorship experience.
               </p>
 
               {/* Vibe Tags Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  'Academic Excellence',
-                  'Coding & Tech',
-                  'Campus Life',
-                  'Scholarships',
-                  'Side Hustles',
-                  'Mental Health',
+                  "Academic Excellence",
+                  "Coding & Tech",
+                  "Campus Life",
+                  "Scholarships",
+                  "Side Hustles",
+                  "Mental Health",
                 ].map((vibe) => (
                   <button
                     key={vibe}
                     onClick={() => handleVibeToggle(vibe)}
                     className={`px-6 py-3 rounded-lg font-medium transition border ${
                       formData.selectedVibes.includes(vibe)
-                        ? 'bg-blue-600 text-white border-blue-500'
-                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-blue-500'
+                        ? "bg-blue-600 text-white border-blue-500"
+                        : "bg-slate-900 text-slate-300 border-slate-800 hover:border-blue-500"
                     }`}
                   >
                     {vibe}
@@ -319,7 +363,10 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
               {/* Selection Count */}
               <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
                 <p className="text-slate-300 text-sm">
-                  <span className="font-semibold text-blue-400">{formData.selectedVibes.length}</span> topic{formData.selectedVibes.length !== 1 ? 's' : ''} selected
+                  <span className="font-semibold text-blue-400">
+                    {formData.selectedVibes.length}
+                  </span>{" "}
+                  topic{formData.selectedVibes.length !== 1 ? "s" : ""} selected
                 </p>
               </div>
             </div>
@@ -330,12 +377,22 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
       {/* Footer with Action Button */}
       <div className="bg-slate-900 border-t border-slate-800 py-6 px-4">
         <div className="max-w-2xl mx-auto">
+          {/* Error Message - Display for all steps */}
+          {error && (
+            <div className="p-4 mb-4 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
+              {error}
+            </div>
+          )}
           <button
             onClick={currentStep < totalSteps ? handleContinue : handleSubmit}
             disabled={!canProceedNext() || loading}
             className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
           >
-            {loading ? 'Processing...' : currentStep < totalSteps ? 'Continue' : 'Build My Dashboard'}
+            {loading
+              ? "Processing..."
+              : currentStep < totalSteps
+                ? "Continue"
+                : "Build My Dashboard"}
           </button>
         </div>
       </div>
