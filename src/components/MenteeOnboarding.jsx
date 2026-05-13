@@ -3,7 +3,7 @@ import ProgressBar from './ProgressBar';
 import ChatStep from './ChatStep';
 import VibeSelector from './VibeSelector';
 
-export default function MenteeOnboarding() {
+export default function MenteeOnboarding({ onBack = () => {} }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     studentClass: '',
@@ -46,6 +46,18 @@ export default function MenteeOnboarding() {
 
   return (
     <div className="min-h-screen bg-slate-950">
+      {/* Back Button */}
+      <div className="bg-slate-950 border-b border-slate-800 px-4 py-3">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={onBack}
+            className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2"
+          >
+            ← Back to Home
+          </button>
+        </div>
+      </div>
+
       {/* Progress Bar */}
       <ProgressBar
         currentStep={currentStep}

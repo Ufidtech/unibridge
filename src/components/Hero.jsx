@@ -1,4 +1,4 @@
-export default function Hero() {
+export default function Hero({ onFindMentor }) {
   return (
     <section className="bg-slate-950 py-16 md:py-32 px-4">
       <div className="max-w-4xl mx-auto text-center">
@@ -15,7 +15,9 @@ export default function Hero() {
         {/* CTA Buttons */}
         <div className="flex flex-col md:flex-row gap-4 md:gap-6 justify-center">
           {/* Primary Button */}
-          <button className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl">
+          <button 
+            onClick={onFindMentor}
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl">
             Find a Mentor
           </button>
 

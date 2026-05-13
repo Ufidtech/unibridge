@@ -1,10 +1,15 @@
 import { useState } from 'react';
 
-export default function Navbar() {
+export default function Navbar({ onNavigate = () => {} }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleLogoClick = () => {
+    onNavigate('landing');
+    setIsOpen(false);
   };
 
   return (
@@ -12,11 +17,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <button
+            onClick={handleLogoClick}
+            className="flex-shrink-0 hover:opacity-80 transition"
+          >
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">
               Unibridge
             </span>
-          </div>
+          </button>
 
           {/* Desktop Links */}
           <div className="hidden md:flex md:space-x-8 md:items-center">
