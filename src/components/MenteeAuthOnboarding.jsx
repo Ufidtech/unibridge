@@ -47,7 +47,7 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
       return (
         formData.fullName.trim() &&
         formData.email.includes('@') &&
-        formData.password.length >= 6
+        formData.password.length >= 8
       );
     }
     if (currentStep === 2) {
@@ -172,7 +172,7 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Min. 6 characters"
+                    placeholder="Min. 8 characters"
                     className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors duration-200"
                   />
                   <button
@@ -210,6 +210,20 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
                   Sign in
                 </button>
               </p>
+                {/* Error Message */}
+                {error && (
+                  <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {/* Sign In Link */}
+                <p className="text-center text-sm text-slate-400">
+                  Already have an account?{' '}
+                  <button className="text-blue-500 hover:text-blue-400 font-medium transition">
+                    Sign in
+                  </button>
+                </p>
             </div>
           )}
 
@@ -318,10 +332,10 @@ export default function MenteeAuthOnboarding({ onBack = () => {}, onComplete = (
         <div className="max-w-2xl mx-auto">
           <button
             onClick={currentStep < totalSteps ? handleContinue : handleSubmit}
-            disabled={!canProceedNext()}
+            disabled={!canProceedNext() || loading}
             className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
           >
-            {currentStep < totalSteps ? 'Continue' : 'Build My Dashboard'}
+            {loading ? 'Processing...' : currentStep < totalSteps ? 'Continue' : 'Build My Dashboard'}
           </button>
         </div>
       </div>

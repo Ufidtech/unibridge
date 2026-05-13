@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getGeminiResponse } from '../gemini';
 
 export default function AICommandCenter() {
   const [input, setInput] = useState('');
@@ -8,23 +9,22 @@ export default function AICommandCenter() {
       text: 'Hi! 👋 I\'m your AI mentor assistant. Ask me anything to help refine what you\'re looking for in a mentor. For example: "What skills do I need for Computer Science?" or "Help me prepare for JAMB".',
     },
   ]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = () => {
-    if (input.trim()) {
-      setMessages([...messages, { role: 'user', text: input }]);
-      setInput('');
-
-      // Simulate AI response
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'ai',
-            text: 'Great question! Let me help you think about this and find the right mentor for you.',
-          },
-        ]);
-      }, 500);
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) {
+      return;
     }
+
+    const userMessage = input.trim();
+    setMessages((prev) => [...prev, { role: 'user', text: userMessage }]);
+    setInput('');
+    setIsLoading(true);
+
+    const aiReply = await getGeminiResponse(userMessage);
+
+    setMessages((prev) => [...prev, { role: 'ai', text: aiReply }]);
+    setIsLoading(false);
   };
 
   return (
@@ -57,15 +57,16 @@ export default function AICommandCenter() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="e.g., What skills do I need for Computer Science?"
           className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
         />
         <button
           onClick={handleSend}
+          disabled={isLoading}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition"
         >
-          Send
+          {isLoading ? 'Thinking...' : 'Send'}
         </button>
       </div>
 

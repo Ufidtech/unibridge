@@ -1,0 +1,24 @@
+{
+  "name": "unibridge-backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "db:seed": "node scripts/seedFirebase.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.9.0",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "firebase-tools": "^14.10.0",
+    "nodemon": "^3.1.10"
+  }
+}
