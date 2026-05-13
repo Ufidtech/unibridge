@@ -1,4 +1,4 @@
-export default function Hero({ onFindMentor }) {
+export default function Hero({ onFindMentor, onBecomeMentor }) {
   return (
     <section className="bg-slate-950 py-16 md:py-32 px-4">
       <div className="max-w-4xl mx-auto text-center">
@@ -22,7 +22,9 @@ export default function Hero({ onFindMentor }) {
           </button>
 
           {/* Secondary Button */}
-          <button className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-lg transition border border-slate-700">
+          <button 
+            onClick={onBecomeMentor}
+            className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-lg transition border border-slate-700">
             Become a Mentor
           </button>
         </div>

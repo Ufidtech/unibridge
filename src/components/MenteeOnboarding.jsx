@@ -3,7 +3,7 @@ import ProgressBar from './ProgressBar';
 import ChatStep from './ChatStep';
 import VibeSelector from './VibeSelector';
 
-export default function MenteeOnboarding({ onBack = () => {} }) {
+export default function MenteeOnboarding({ onBack = () => {}, onComplete = () => {} }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     studentClass: '',
@@ -39,8 +39,14 @@ export default function MenteeOnboarding({ onBack = () => {} }) {
   const handleSubmit = () => {
     if (canProceedNext()) {
       console.log('Form Data:', formData);
-      alert('Dashboard will open next!');
-      // TODO: Navigate to dashboard
+      // Pass user data to dashboard
+      const userData = {
+        name: formData.studentClass, // Using class as temporary name
+        level: formData.studentClass,
+        dreamCourse: formData.dreamCourse,
+        interests: formData.selectedVibes,
+      };
+      onComplete(userData);
     }
   };
 
@@ -50,10 +56,10 @@ export default function MenteeOnboarding({ onBack = () => {} }) {
       <div className="bg-slate-950 border-b border-slate-800 px-4 py-3">
         <div className="max-w-2xl mx-auto">
           <button
-            onClick={onBack}
+            onClick={currentStep > 1 ? handlePrevious : onBack}
             className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2"
           >
-            ← Back to Home
+            ← {currentStep > 1 ? 'Previous Step' : 'Back to Home'}
           </button>
         </div>
       </div>
