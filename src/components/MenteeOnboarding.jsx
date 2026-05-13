@@ -104,7 +104,7 @@ export default function MenteeOnboarding({ onBack = () => {} }) {
             <button
               onClick={handleSubmit}
               disabled={!canProceedNext()}
-              className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
+              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
             >
               Build My Dashboard
             </button>
