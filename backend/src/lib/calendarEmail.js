@@ -4,7 +4,10 @@ let googleClient = null;
 let calendarId = process.env.GOOGLE_CALENDAR_ID || "primary";
 let mailer = null;
 
-// Local email preview store
+// =========================================================
+// LOCAL EMAIL PREVIEW STORE
+// =========================================================
+
 const emailPreviewStore = [];
 
 // =========================================================
@@ -86,14 +89,17 @@ async function initMailerIfNeeded() {
 
     console.log("✅ Mailer initialized");
   } catch (err) {
-    console.warn("❌ Mailer init failed:", err?.message || err);
+    console.warn(
+      "❌ Mailer init failed:",
+      err?.message || err,
+    );
 
     mailer = null;
   }
 }
 
 // =========================================================
-// CREATE REAL GOOGLE MEET EVENT
+// CREATE GOOGLE CALENDAR EVENT + REAL GOOGLE MEET
 // =========================================================
 
 export async function createCalendarEvent({
@@ -112,7 +118,9 @@ export async function createCalendarEvent({
   }
 
   try {
-    const requestId = `unibridge-${Date.now()}`;
+    const requestId = `unibridge-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
 
     console.log("📅 Creating Google Calendar event...");
 
@@ -123,6 +131,10 @@ export async function createCalendarEvent({
       attendees,
       calendarId,
     });
+
+    // =========================================================
+    // EVENT OBJECT
+    // =========================================================
 
     const event = {
       summary,
@@ -139,22 +151,24 @@ export async function createCalendarEvent({
         timeZone: "UTC",
       },
 
-      attendees: attendees
-        .filter(Boolean)
-        .map((email) => ({
-          email,
-        })),
+      guestsCanModify: false,
 
+      guestsCanInviteOthers: false,
+
+      guestsCanSeeOtherGuests: true,
+
+      // IMPORTANT:
+      // Do NOT use conferenceSolutionKey
       conferenceData: {
         createRequest: {
           requestId,
-
-          conferenceSolutionKey: {
-            type: "hangoutsMeet",
-          },
         },
       },
     };
+
+    // =========================================================
+    // CREATE EVENT
+    // =========================================================
 
     const response = await googleClient.events.insert({
       calendarId,
@@ -163,13 +177,46 @@ export async function createCalendarEvent({
 
       conferenceDataVersion: 1,
 
-      sendUpdates: "all",
+      sendUpdates: "none",
     });
 
-    console.log("✅ RAW GOOGLE RESPONSE:");
-    console.dir(response.data, { depth: null });
+    console.log("✅ EVENT INSERTED");
 
-    const createdEvent = response.data;
+    console.dir(response.data, {
+      depth: null,
+    });
+
+    // =========================================================
+    // WAIT FOR GOOGLE TO GENERATE MEET
+    // =========================================================
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, 2000),
+    );
+
+    // =========================================================
+    // REFRESH EVENT
+    // =========================================================
+
+    const refreshed = await googleClient.events.get({
+      calendarId,
+
+      eventId: response.data.id,
+
+      conferenceDataVersion: 1,
+    });
+
+    const createdEvent = refreshed.data;
+
+    console.log("✅ REFRESHED EVENT:");
+
+    console.dir(createdEvent, {
+      depth: null,
+    });
+
+    // =========================================================
+    // EXTRACT REAL GOOGLE MEET LINK
+    // =========================================================
 
     const meetLink =
       createdEvent?.hangoutLink ||
@@ -178,10 +225,15 @@ export async function createCalendarEvent({
       )?.uri ||
       null;
 
-    console.log("🎥 GENERATED MEET LINK:", meetLink);
+    console.log(
+      "🎥 GENERATED GOOGLE MEET LINK:",
+      meetLink,
+    );
 
     if (!meetLink) {
-      console.log("❌ No Google Meet link generated");
+      console.log(
+        "❌ Google Meet link was NOT generated",
+      );
     }
 
     return {
@@ -191,9 +243,12 @@ export async function createCalendarEvent({
   } catch (err) {
     console.log("❌ GOOGLE EVENT CREATION FAILED");
 
-    console.dir(err?.response?.data || err, {
-      depth: null,
-    });
+    console.dir(
+      err?.response?.data || err,
+      {
+        depth: null,
+      },
+    );
 
     return null;
   }
@@ -211,7 +266,10 @@ export async function sendEmail({
 }) {
   await initMailerIfNeeded();
 
+  // =========================================================
   // DEV MODE
+  // =========================================================
+
   if (!mailer) {
     const preview = {
       to,
@@ -237,6 +295,10 @@ export async function sendEmail({
     return true;
   }
 
+  // =========================================================
+  // REAL EMAIL
+  // =========================================================
+
   try {
     await mailer.sendMail({
       from:
@@ -251,6 +313,13 @@ export async function sendEmail({
 
       html,
     });
+
+    console.log(
+      "✅ Email sent:",
+      subject,
+      "->",
+      to,
+    );
 
     return true;
   } catch (err) {
