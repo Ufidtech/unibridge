@@ -55,7 +55,7 @@ export default function ModalDemo() {
             </p>
             <button
               onClick={() => setShowBookModal(true)}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition cursor-pointer"
             >
               Open Book Session
             </button>
@@ -71,7 +71,7 @@ export default function ModalDemo() {
             </p>
             <button
               onClick={() => setShowSuccessModal(true)}
-              className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg transition"
+              className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg transition cursor-pointer"
             >
               Open Success State
             </button>

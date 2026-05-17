@@ -3,7 +3,7 @@ import ProgressBar from './ProgressBar';
 import ChatStep from './ChatStep';
 import VibeSelector from './VibeSelector';
 
-export default function MenteeOnboarding({ onBack = () => {}, onComplete = () => {} }) {
+export default function MenteeOnboarding({ onBack = () => {}, onComplete = () => {}, onNavigate = () => {} }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     studentClass: '',
@@ -52,14 +52,20 @@ export default function MenteeOnboarding({ onBack = () => {}, onComplete = () =>
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Back Button */}
+      {/* Header with Back Button and Sign In */}
       <div className="bg-slate-950 border-b border-slate-800 px-4 py-3">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto flex justify-between items-center">
           <button
             onClick={currentStep > 1 ? handlePrevious : onBack}
-            className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2"
+            className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 cursor-pointer"
           >
             ← {currentStep > 1 ? 'Previous Step' : 'Back to Home'}
+          </button>
+          <button
+            onClick={() => onNavigate('login')}
+            className="text-blue-500 hover:text-blue-400 font-medium transition cursor-pointer"
+          >
+            Already have an account? Sign In
           </button>
         </div>
       </div>
@@ -88,7 +94,7 @@ export default function MenteeOnboarding({ onBack = () => {}, onComplete = () =>
           {currentStep > 1 && (
             <button
               onClick={handlePrevious}
-              className="flex-1 md:flex-none px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-lg transition"
+              className="flex-1 md:flex-none px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-lg transition cursor-pointer"
             >
               ← Previous
             </button>
@@ -102,7 +108,7 @@ export default function MenteeOnboarding({ onBack = () => {}, onComplete = () =>
             <button
               onClick={handleNext}
               disabled={!canProceedNext()}
-              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
+              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition cursor-pointer"
             >
               Next →
             </button>
@@ -110,7 +116,7 @@ export default function MenteeOnboarding({ onBack = () => {}, onComplete = () =>
             <button
               onClick={handleSubmit}
               disabled={!canProceedNext()}
-              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
+              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition cursor-pointer"
             >
               Build My Dashboard
             </button>

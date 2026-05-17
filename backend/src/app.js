@@ -6,6 +6,8 @@ import aiRoutes from './routes/aiRoutes.js';
 import mentorRoutes from './routes/mentorRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
+import debugRoutes from './routes/debugRoutes.js';
+import devRoutes from './routes/devRoutes.js';
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/mentors', mentorRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/debug', debugRoutes);
+app.use('/api/dev', devRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found.' });

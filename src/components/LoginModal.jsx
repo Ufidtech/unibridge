@@ -55,7 +55,7 @@ export default function LoginModal({
           <div className="text-center mb-12">
             <button
               onClick={onBack}
-              className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 mb-6 mx-auto"
+              className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 mb-6 mx-auto cursor-pointer"
             >
               ← Back
             </button>
@@ -69,7 +69,7 @@ export default function LoginModal({
           <div className="space-y-3">
             <button
               onClick={() => setUserType("mentee")}
-              className="w-full px-6 py-4 bg-slate-900 border-2 border-slate-800 hover:border-blue-500 text-white rounded-lg transition flex flex-col gap-2"
+              className="w-full px-6 py-4 bg-slate-900 border-2 border-slate-800 hover:border-blue-500 text-white rounded-lg transition flex flex-col gap-2 cursor-pointer"
             >
               <span className="font-semibold text-lg">Sign in as Mentee</span>
               <span className="text-sm text-slate-400">
@@ -79,7 +79,7 @@ export default function LoginModal({
 
             <button
               onClick={() => setUserType("mentor")}
-              className="w-full px-6 py-4 bg-slate-900 border-2 border-slate-800 hover:border-blue-500 text-white rounded-lg transition flex flex-col gap-2"
+              className="w-full px-6 py-4 bg-slate-900 border-2 border-slate-800 hover:border-blue-500 text-white rounded-lg transition flex flex-col gap-2 cursor-pointer"
             >
               <span className="font-semibold text-lg">Sign in as Mentor</span>
               <span className="text-sm text-slate-400">
@@ -99,7 +99,7 @@ export default function LoginModal({
         <div className="text-center mb-8">
           <button
             onClick={() => setUserType(null)}
-            className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 mb-6 mx-auto"
+            className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 mb-6 mx-auto cursor-pointer"
           >
             ← Back
           </button>
@@ -156,7 +156,7 @@ export default function LoginModal({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-slate-400 hover:text-slate-300 transition"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-300 transition cursor-pointer"
               >
                 {showPassword ? (
                   <svg
@@ -193,7 +193,7 @@ export default function LoginModal({
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition cursor-pointer"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
@@ -204,7 +204,7 @@ export default function LoginModal({
           Don't have an account?{" "}
           <button
             onClick={onBack}
-            className="text-blue-500 hover:text-blue-400 font-medium transition"
+            className="text-blue-500 hover:text-blue-400 font-medium transition cursor-pointer"
           >
             Get started
           </button>

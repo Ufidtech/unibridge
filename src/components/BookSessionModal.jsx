@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 export default function BookSessionModal({ mentor = {
   name: 'Umar Farooq',
@@ -6,10 +8,10 @@ export default function BookSessionModal({ mentor = {
   level: '300L',
   university: 'FUT Minna',
   bio: 'Frontend Dev and AI enthusiast',
-}, onConfirm = () => {}, onClose = () => {} }) {
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+}, onConfirm = () => {}, onClose = () => {}, initialDate = '', initialTime = '', confirmLabel = 'Confirm Booking' }) {
+  const [selectedDateTime, setSelectedDateTime] = useState(null);
   const [goal, setGoal] = useState('');
+  const [timezone, setTimezone] = useState('');
   const [aiQuestions] = useState([
     "What specific areas of React do you want to master?",
     "What challenges are you facing with your JAMB prep?",
@@ -23,14 +25,33 @@ export default function BookSessionModal({ mentor = {
     '2026-05-18',
   ];
 
-  const canConfirm = selectedDate && selectedTime && goal.trim();
+  // initialize with provided values (for reschedule flows)
+  useEffect(() => {
+    if (initialDate && initialTime) {
+      try {
+        const dt = new Date(initialDate + 'T' + (initialTime.length === 5 ? initialTime + ':00' : initialTime));
+        setSelectedDateTime(dt);
+      } catch (e) {
+        setSelectedDateTime(null);
+      }
+    }
+    // detect browser timezone
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      setTimezone(tz);
+    } catch (e) {
+      setTimezone('UTC');
+    }
+  }, [initialDate, initialTime]);
+
+  const canConfirm = selectedDateTime && goal.trim();
 
   const handleConfirm = () => {
     if (canConfirm) {
       onConfirm({
         mentorName: mentor.name,
-        date: selectedDate,
-        time: selectedTime,
+        datetime: selectedDateTime ? selectedDateTime.toISOString() : null,
+        timezone,
         goal: goal,
       });
     }
@@ -58,49 +79,18 @@ export default function BookSessionModal({ mentor = {
 
         {/* Content */}
         <div className="p-6 max-h-96 overflow-y-auto">
-          {/* Date Picker */}
           <div className="mb-4">
-            <label className="block text-slate-300 font-semibold mb-2 text-sm">
-              Select Date
-            </label>
-            <select
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
-            >
-              <option value="">Choose a date...</option>
-              {dateOptions.map((date) => (
-                <option key={date} value={date}>
-                  {new Date(date).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Time Picker */}
-          <div className="mb-4">
-            <label className="block text-slate-300 font-semibold mb-2 text-sm">
-              Select Time
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {timeSlots.map((time) => (
-                <button
-                  key={time}
-                  onClick={() => setSelectedTime(time)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                    selectedTime === time
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                  }`}
-                >
-                  {time}
-                </button>
-              ))}
-            </div>
+            <label className="block text-slate-300 font-semibold mb-2 text-sm">Select Date & Time</label>
+            <DatePicker
+              selected={selectedDateTime}
+              onChange={(date) => setSelectedDateTime(date)}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="yyyy-MM-dd HH:mm"
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 text-sm"
+              placeholderText="Select date and time"
+            />
           </div>
 
           {/* Goal Textarea */}
@@ -131,6 +121,19 @@ export default function BookSessionModal({ mentor = {
               ))}
             </ul>
           </div>
+
+          {/* Timezone Selector */}
+          <div className="p-6 border-t border-slate-800 bg-slate-900">
+            <label className="block text-slate-300 font-semibold mb-2 text-sm">Timezone</label>
+            <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 text-sm">
+              <option value={timezone}>{timezone} (detected)</option>
+              <option value="UTC">UTC</option>
+              <option value="Africa/Lagos">Africa/Lagos</option>
+              <option value="America/New_York">America/New_York</option>
+              <option value="Asia/Kolkata">Asia/Kolkata</option>
+              <option value="Europe/London">Europe/London</option>
+            </select>
+          </div>
         </div>
 
         {/* Footer */}
@@ -146,7 +149,7 @@ export default function BookSessionModal({ mentor = {
             disabled={!canConfirm}
             className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
           >
-            Confirm Booking
+            {confirmLabel}
           </button>
         </div>
       </div>

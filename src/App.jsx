@@ -5,12 +5,14 @@ import {
   Routes,
   useNavigate,
 } from "react-router-dom";
+import { Toaster } from 'react-hot-toast';
 import LandingPage from "./components/LandingPage";
 import LoginModal from "./components/LoginModal";
 import MenteeAuthOnboarding from "./components/MenteeAuthOnboarding";
 import MentorOnboarding from "./components/MentorOnboarding";
 import MenteeDashboard from "./components/MenteeDashboard";
 import MentorDashboard from "./components/MentorDashboard";
+import DevLogin from "./components/DevLogin";
 import { fetchMe } from "./lib/api/auth";
 
 function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
@@ -32,6 +34,8 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
 
   return (
     <Routes>
+  {/* Dev-only helper route to seed localStorage for quick UI testing */}
+  {process.env.NODE_ENV !== 'production' && <Route path="/dev-login" element={<DevLogin />} />}
       <Route path="/" element={<LandingPage onNavigate={handleNavigation} />} />
       <Route
         path="/login"
@@ -54,6 +58,7 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
           <MenteeAuthOnboarding
             onBack={() => handleNavigation("/")}
             onComplete={(data) => handleNavigation("/mentee-dashboard", data)}
+            onNavigate={handleNavigation}
           />
         }
       />
@@ -127,6 +132,7 @@ function App() {
         mentorData={mentorData}
         setMentorData={setMentorData}
       />
+      <Toaster position="top-right" />
     </Router>
   );
 }

@@ -1,12 +1,24 @@
 import { useState } from 'react';
-import { getGeminiResponse } from '../gemini';
 
-export default function AICommandCenter() {
+// We'll call the backend AI endpoint which will either use Gemini or the local fallback
+async function askAssistant(prompt) {
+  const res = await fetch('/api/ai/mentor-response', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
+  const json = await res.json();
+  return json.response;
+}
+
+export default function AICommandCenter({ userInfo = null }) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     {
       role: 'ai',
-      text: 'Hi! 👋 I\'m your AI mentor assistant. Ask me anything to help refine what you\'re looking for in a mentor. For example: "What skills do I need for Computer Science?" or "Help me prepare for JAMB".',
+      text: userInfo?.menteeProfile?.school
+        ? `Hi ${userInfo.name}! 👋 I'm your AI mentor assistant. Tell me your goals (e.g., "Prepare for ${userInfo.menteeProfile.dreamCourse || 'JAMB'}") and I'll help match you with the right mentor.`
+        : 'Hi! 👋 I\'m your AI mentor assistant. Ask me anything to help refine what you\'re looking for in a mentor. For example: "What skills do I need for Computer Science?" or "Help me prepare for JAMB".',
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,9 +33,9 @@ export default function AICommandCenter() {
     setInput('');
     setIsLoading(true);
 
-    const aiReply = await getGeminiResponse(userMessage);
+  const aiReply = await askAssistant(userMessage);
 
-    setMessages((prev) => [...prev, { role: 'ai', text: aiReply }]);
+  setMessages((prev) => [...prev, { role: 'ai', text: aiReply }]);
     setIsLoading(false);
   };
 

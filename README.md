@@ -23,6 +23,11 @@ Available routes:
 - `GET` and `POST /api/contact`
 - `POST /api/ai/mentor-response`
 
+Frontend notes
+
+- Mentor cards now show a short "Why this mentor?" breakdown when the backend returns `breakdown` details. The breakdown explains which signals contributed to the recommendation (course match, skills, shared vibes, availability score).
+- The AI Command Center sends free-text questions to `/api/ai/mentor-response` and displays the assistant reply in the chat UI.
+
 Setup:
 
 1. Copy [backend/.env.example](backend/.env.example) to `backend/.env` and set the Firebase project and service-account fields plus `GEMINI_API_KEY`.

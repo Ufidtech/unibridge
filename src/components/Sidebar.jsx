@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { logout } from "../lib/api/auth";
 
 export default function Sidebar({
   userInfo = { name: "Ibrahim", level: "SS3" },
   onNavigate = () => {},
 }) {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -12,15 +14,26 @@ export default function Sidebar({
   };
 
   const handleLogout = async () => {
+  try {
+    console.log("🚪 Starting logout...");
+
     await logout();
-    onNavigate("landing");
-    setIsOpen(false);
-  };
+
+    console.log("✅ Logout successful");
+  } catch (err) {
+    console.warn("⚠️ Logout failed (ignored):", err);
+  }
+
+  setIsOpen(false);
+
+  // Hard refresh to fully reset Firebase auth state
+  window.location.href = "/";
+};
 
   const navLinks = [
-    { label: "Dashboard", icon: "📊" },
-    { label: "My Sessions", icon: "📅" },
-    { label: "Profile", icon: "👤" },
+    { label: "Dashboard", icon: "📊", path: "/mentee-dashboard" },
+    { label: "My Sessions", icon: "📅", path: "/mentee-dashboard?tab=sessions" },
+    { label: "Profile", icon: "👤", path: "/mentee-dashboard?tab=profile" },
   ];
 
   return (
@@ -28,7 +41,7 @@ export default function Sidebar({
       {/* Mobile Hamburger Button */}
       <button
         onClick={toggleMenu}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition transform translate-x-10"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition transform translate-x-10 cursor-pointer"
       >
         <svg
           className="w-6 h-6"
@@ -58,7 +71,7 @@ export default function Sidebar({
               onNavigate("landing");
               setIsOpen(false);
             }}
-            className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent hover:opacity-80 transition"
+            className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent hover:opacity-80 transition cursor-pointer"
           >
             Unibridge
           </button>
@@ -66,15 +79,28 @@ export default function Sidebar({
 
         {/* Navigation Links */}
         <nav className="space-y-4 mb-12">
-          {navLinks.map((link) => (
-            <button
-              key={link.label}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-slate-100 transition text-left"
-            >
-              <span className="text-xl">{link.icon}</span>
-              <span className="font-medium">{link.label}</span>
-            </button>
-          ))}
+          {navLinks.map((link) => {
+            // consider query string when determining active link
+            const current = `${location.pathname}${location.search || ''}`;
+            const isActive = current.startsWith(link.path);
+            return (
+              <button
+                key={link.label}
+                onClick={() => {
+                  onNavigate(link.path);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left cursor-pointer ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                }`}
+              >
+                <span className="text-xl">{link.icon}</span>
+                <span className="font-medium">{link.label}</span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* User Info - Bottom */}
@@ -90,7 +116,7 @@ export default function Sidebar({
           </div>
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition"
+            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition cursor-pointer"
           >
             Logout
           </button>

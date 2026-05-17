@@ -17,14 +17,14 @@ export default function Hero({ onFindMentor, onBecomeMentor }) {
           {/* Primary Button */}
           <button 
             onClick={onFindMentor}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl">
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition shadow-lg hover:shadow-xl cursor-pointer">
             Find a Mentor
           </button>
 
           {/* Secondary Button */}
           <button 
             onClick={onBecomeMentor}
-            className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-lg transition border border-slate-700">
+            className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold rounded-lg transition border border-slate-700 cursor-pointer">
             Become a Mentor
           </button>
         </div>

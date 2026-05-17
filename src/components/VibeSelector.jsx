@@ -32,7 +32,7 @@ export default function VibeSelector({ formData, setFormData }) {
             <button
               key={vibe}
               onClick={() => toggleVibe(vibe)}
-              className={`px-6 py-4 rounded-lg font-semibold transition duration-200 transform ${
+              className={`px-6 py-4 rounded-lg font-semibold transition duration-200 transform cursor-pointer ${
                 formData.selectedVibes.includes(vibe)
                   ? 'bg-blue-600 text-white shadow-lg scale-105'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'

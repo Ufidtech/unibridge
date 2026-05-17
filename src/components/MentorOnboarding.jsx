@@ -1,5 +1,7 @@
 import { useState } from "react";
+import Select from "react-select";
 import { registerMentor } from "../lib/api/auth";
+import NIGERIA_UNIVERSITIES from "../data/nigeriaUniversities";
 
 export default function MentorOnboarding({
   onBack = () => {},
@@ -9,7 +11,8 @@ export default function MentorOnboarding({
     fullName: "",
     email: "",
     password: "",
-    university: "",
+    universityName: "",
+    universityAbbr: "",
     level: "",
     bio: "",
     expertise: [],
@@ -19,20 +22,10 @@ export default function MentorOnboarding({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const universities = NIGERIA_UNIVERSITIES;
 
-  const universities = [
-    "Federal University of Technology Minna",
-    "University of Lagos",
-    "University of Ibadan",
-    "Covenant University",
-    "Lagos State University",
-    "Ahmadu Bello University",
-    "Obafemi Awolowo University",
-    "University of Nigeria",
-    "Other",
-  ];
-
-  const levels = ["100L", "200L", "300L", "400L"];
+  const levels = ["200L", "300L", "400L"];
 
   const availabilityOptions = [
     "Not Available",
@@ -57,6 +50,21 @@ export default function MentorOnboarding({
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  // react-select options
+  const uniOptions = universities.map((u) => ({
+    value: u.abbr,
+    label: `${u.name} — ${u.abbr}`,
+    name: u.name,
+  }));
+  const handleUniChange = (opt) => {
+    if (!opt) return;
+    setFormData({
+      ...formData,
+      universityName: opt.name,
+      universityAbbr: opt.value,
+    });
   };
 
   const toggleExpertise = (tag) => {
@@ -87,7 +95,7 @@ export default function MentorOnboarding({
       formData.email.includes("@") &&
       formData.password &&
       formData.password.length >= 8 &&
-      formData.university &&
+      formData.universityName &&
       formData.level &&
       formData.bio &&
       formData.expertise.length > 0 &&
@@ -104,10 +112,12 @@ export default function MentorOnboarding({
         name: formData.fullName,
         email: formData.email,
         password: formData.password,
-        university: formData.university,
+        universityName: formData.universityName,
+        universityAbbr: formData.universityAbbr,
         level: formData.level,
         bio: formData.bio,
         skills: formData.expertise,
+        responseTime: formData.availability,
         selectedVibes: [],
       };
 
@@ -116,9 +126,23 @@ export default function MentorOnboarding({
           try {
             localStorage.setItem("mentorData", JSON.stringify(user));
           } catch {}
-          onComplete(user);
+
+          setSuccess("Mentor profile created successfully!");
+          setError(null);
+
+          setTimeout(() => {
+            onComplete(user);
+          }, 1500);
         })
-        .catch((err) => setError(err.message || "Registration failed"))
+        .catch((err) => {
+          const message =
+            err?.response?.data?.error ||
+            err?.message ||
+            "Something went wrong. Please try again.";
+
+          setError(message);
+          setSuccess(null);
+        })
         .finally(() => setLoading(false));
     }
   };
@@ -129,7 +153,7 @@ export default function MentorOnboarding({
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 mb-8"
+          className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 mb-8 cursor-pointer"
         >
           ← Back to Home
         </button>
@@ -242,19 +266,30 @@ export default function MentorOnboarding({
                   <label className="block text-slate-300 font-semibold mb-2">
                     University *
                   </label>
-                  <select
-                    name="university"
-                    value={formData.university}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-                  >
-                    <option value="">Select University</option>
-                    {universities.map((uni) => (
-                      <option key={uni} value={uni}>
-                        {uni}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mt-2">
+                    <Select
+                      options={uniOptions}
+                      onChange={handleUniChange}
+                      isClearable
+                      placeholder="Search or select university"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          background: "#0f1724",
+                          borderColor: "#374151",
+                          color: "#e5e7eb",
+                        }),
+                        menu: (base) => ({ ...base, background: "#0f1724" }),
+                        option: (base, state) => ({
+                          ...base,
+                          background: state.isFocused
+                            ? "#1f2937"
+                            : "transparent",
+                          color: "#e5e7eb",
+                        }),
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Level */}
@@ -364,7 +399,7 @@ export default function MentorOnboarding({
                     key={tag}
                     type="button"
                     onClick={() => toggleExpertise(tag)}
-                    className={`px-4 py-2 rounded-lg font-medium transition ${
+                    className={`px-4 py-2 rounded-lg font-medium transition cursor-pointer ${
                       formData.expertise.includes(tag)
                         ? "bg-blue-600 text-white shadow-lg"
                         : "bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
@@ -398,6 +433,13 @@ export default function MentorOnboarding({
           </div>
 
           {/* Footer Button */}
+
+          {/* Success Message */}
+          {success && (
+            <div className="p-4 mb-4 bg-green-900/20 border border-green-500 rounded-lg text-green-300 text-sm">
+              {success}
+            </div>
+          )}
           {/* Error Message - Display when error occurs */}
           {error && (
             <div className="p-4 mb-4 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
@@ -407,10 +449,10 @@ export default function MentorOnboarding({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!canSubmit()}
-            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
+            disabled={!canSubmit() || loading}
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition cursor-pointer"
           >
-            Launch Mentor Profile
+            {loading ? "Creating Profile..." : "Launch Mentor Profile"}
           </button>
 
           {/* Help Text */}

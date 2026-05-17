@@ -19,7 +19,7 @@ export default function Navbar({ onNavigate = () => {} }) {
           {/* Logo */}
           <button
             onClick={handleLogoClick}
-            className="flex-shrink-0 hover:opacity-80 transition"
+            className="flex-shrink-0 hover:opacity-80 transition cursor-pointer"
           >
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">
               Unibridge
@@ -52,7 +52,7 @@ export default function Navbar({ onNavigate = () => {} }) {
           <div className="hidden md:block">
             <button
               onClick={() => onNavigate("login")}
-              className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg transition"
+              className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg transition cursor-pointer"
             >
               Sign In
             </button>
@@ -62,7 +62,7 @@ export default function Navbar({ onNavigate = () => {} }) {
           <div className="md:hidden">
             <button
               onClick={toggleMenu}
-              className="text-slate-300 hover:text-slate-100 focus:outline-none"
+              className="text-slate-300 hover:text-slate-100 focus:outline-none cursor-pointer"
             >
               <svg
                 className="w-6 h-6"
@@ -109,7 +109,7 @@ export default function Navbar({ onNavigate = () => {} }) {
                 onNavigate("login");
                 setIsOpen(false);
               }}
-              className="w-full mt-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg transition"
+              className="w-full mt-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg transition cursor-pointer"
             >
               Sign In
             </button>
