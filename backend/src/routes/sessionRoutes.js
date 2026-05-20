@@ -3,7 +3,7 @@ import { z } from "zod";
 import { firestore } from "../lib/firebase.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import process from "node:process";
-import { createCalendarEvent, sendEmail } from "../lib/calendarEmail.js";
+import { createCalendarEvent, sendEmail, updateCalendarEvent } from "../lib/calendarEmail.js";
 
 const router = Router();
 
@@ -771,24 +771,19 @@ router.patch(
     try {
       log("📅 Reschedule route hit");
 
-      console.log("📦 Incoming body:", req.body);
-
-      console.log("📌 Params:", req.params);
-
-      console.log("👤 User:", req.user);
-
       const body = z
         .object({
           sessionDate: z.string().min(4),
           sessionTime: z.string().min(1),
+          timezone: z.string().optional(),
         })
         .parse(req.body);
 
-      console.log("✅ Parsed body:", body);
-
       const sessionId = req.params.sessionId;
 
-      const sessionRef = firestore.collection("sessionRequests").doc(sessionId);
+      const sessionRef = firestore
+        .collection("sessionRequests")
+        .doc(sessionId);
 
       const sessionDoc = await sessionRef.get();
 
@@ -800,48 +795,194 @@ router.patch(
 
       const session = sessionDoc.data();
 
+      // Security
       if (session.mentorId !== req.user.uid) {
         return res.status(403).json({
-          error: "You can only reschedule your own sessions.",
+          error:
+            "You can only reschedule your own sessions.",
         });
       }
+
+      // -------------------------
+      // PARSE DATE/TIME
+      // -------------------------
+
+      const timezone =
+        body.timezone ||
+        session.timezone ||
+        "UTC";
+
+      const parsed = await parseSessionISO(
+        body.sessionDate,
+        body.sessionTime,
+        timezone
+      );
+
+      if (!parsed) {
+        return res.status(400).json({
+          error: "Invalid date/time.",
+        });
+      }
+
+      // Current UTC timestamp
+const now = Date.now();
+
+// Parsed session timestamp
+const sessionTimestamp =
+  new Date(parsed.startISO).getTime();
+
+console.log("Current:", new Date(now));
+console.log(
+  "Requested:",
+  new Date(sessionTimestamp)
+);
+
+if (
+  isNaN(sessionTimestamp) ||
+  sessionTimestamp <= now
+) {
+  return res.status(400).json({
+    error:
+      "Cannot select a past date or time.",
+  });
+}
+
+      // -------------------------
+      // UPDATE GOOGLE EVENT
+      // -------------------------
+
+      let calendarUpdated = false;
+
+      if (session.calendarEventId) {
+        try {
+          console.log(
+            "📅 Updating Google event:",
+            session.calendarEventId
+          );
+
+          const result =
+            await updateCalendarEvent({
+              eventId:
+                session.calendarEventId,
+
+              startDate:
+                parsed.startISO,
+
+              endDate:
+                parsed.endISO,
+
+              summary:
+                `Mentor Session: ${session.topic}`,
+
+              description:
+                `Session between ${
+                  session.mentee?.name ||
+                  "Mentee"
+                } and ${
+                  session.mentor?.name ||
+                  "Mentor"
+                }`,
+            });
+
+          if (result) {
+            calendarUpdated = true;
+
+            console.log(
+              "✅ Google event updated"
+            );
+          }
+        } catch (err) {
+          console.log(
+            "⚠️ Calendar update failed:"
+          );
+
+          console.dir(
+            err?.response?.data || err,
+            { depth: null }
+          );
+
+          // Continue anyway
+        }
+      }
+
+      // -------------------------
+      // UPDATE FIRESTORE
+      // -------------------------
 
       const updates = {
         sessionDate: body.sessionDate,
         sessionTime: body.sessionTime,
+        timezone,
         status: "CONFIRMED",
-        updatedAt: new Date().toISOString(),
+        updatedAt:
+          new Date().toISOString(),
       };
 
-      console.log("📝 Applying updates:", updates);
+      await sessionRef.set(
+        updates,
+        { merge: true }
+      );
 
-      await sessionRef.set(updates, {
-        merge: true,
-      });
+      const updatedDoc =
+        await sessionRef.get();
 
-      const updatedDoc = await sessionRef.get();
+      const updatedSession =
+        updatedDoc.data();
 
-      console.log("✅ Session rescheduled:", updatedDoc.id);
+      console.log(
+        "✅ Session rescheduled:",
+        updatedDoc.id
+      );
+
+      // -------------------------
+      // EMAIL
+      // -------------------------
 
       await sendSessionEmails({
         to: session.mentee?.email,
-        subject: "Session Rescheduled",
-        text: `Your session has been rescheduled to ${body.sessionDate} at ${body.sessionTime}.`,
+
+        subject:
+          "Session Rescheduled",
+
+        text: `
+Your session has been rescheduled.
+
+Topic:
+${updatedSession.topic}
+
+New Date:
+${updatedSession.sessionDate}
+
+New Time:
+${updatedSession.sessionTime}
+
+Timezone:
+${updatedSession.timezone}
+
+Meet Link:
+${updatedSession.meetLink || "Available in dashboard"}
+`,
       });
 
       return res.json({
         success: true,
+
+        calendarUpdated,
+
         sessionRequest: {
           id: updatedDoc.id,
-          ...updatedDoc.data(),
+          ...updatedSession,
         },
       });
+
     } catch (err) {
-      errorLog("PATCH /reschedule failed:", err);
+      errorLog(
+        "PATCH /reschedule failed:",
+        err
+      );
 
-      console.log("❌ req.body received:", req.body);
-
-      const zodError = getZodError(err);
+      const zodError =
+        getZodError(err);
 
       if (zodError) {
         return res.status(400).json({
@@ -851,7 +992,7 @@ router.patch(
 
       return next(err);
     }
-  },
+  }
 );
 
 // -------------------------
@@ -1042,24 +1183,105 @@ router.patch(
 
       // Optional:
       // If accepted, automatically update session time
-      let sessionUpdates = {};
+      // Optional:
+// If accepted, automatically update session + calendar
 
-      if (body.status === "ACCEPTED" && targetProposal) {
-        sessionUpdates = {
-          sessionDate: targetProposal.sessionDate,
-          sessionTime: targetProposal.sessionTime,
-          status: "CONFIRMED",
-        };
-      }
+let sessionUpdates = {};
 
-      await sessionRef.set(
-        {
-          proposals: updatedProposals,
-          ...sessionUpdates,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      );
+if (body.status === "ACCEPTED" && targetProposal) {
+
+  const timezone =
+    targetProposal.timezone ||
+    session.timezone ||
+    "UTC";
+
+  const parsed = await parseSessionISO(
+    targetProposal.sessionDate,
+    targetProposal.sessionTime,
+    timezone
+  );
+
+  if (!parsed) {
+    return res.status(400).json({
+      error: "Invalid proposal date/time",
+    });
+  }
+
+  const proposedStart = new Date(
+    parsed.startISO
+  );
+
+  if (proposedStart <= new Date()) {
+    return res.status(400).json({
+      error:
+        "Cannot accept a proposal in the past",
+    });
+  }
+
+  if (session.calendarEventId) {
+    try {
+      await updateCalendarEvent({
+        eventId: session.calendarEventId,
+        startDate: parsed.startISO,
+        endDate: parsed.endISO,
+        summary: `Mentor Session: ${session.topic}`,
+        description: `Session between ${
+          session.mentee?.name || "Mentee"
+        } and ${
+          session.mentor?.name || "Mentor"
+        }`,
+      });
+
+    } catch (err) {
+      return res.status(500).json({
+        error:
+          "Failed to update calendar event",
+      });
+    }
+  }
+
+  sessionUpdates = {
+    sessionDate:
+      targetProposal.sessionDate,
+
+    sessionTime:
+      targetProposal.sessionTime,
+
+    timezone,
+
+    status: "CONFIRMED",
+  };
+}
+
+
+// =====================
+// SAVE TO FIRESTORE
+// =====================
+
+await sessionRef.set(
+  {
+    proposals: updatedProposals,
+    ...sessionUpdates,
+    updatedAt:
+      new Date().toISOString(),
+  },
+  {
+    merge: true,
+  }
+);
+
+
+// Get fresh version
+const updatedDoc =
+  await sessionRef.get();
+
+const updatedSession =
+  updatedDoc.data();
+
+console.log(
+  "✅ Saved proposal response:",
+  updatedSession.proposals
+);
 
       // -------------------------
       // EMAIL TO MENTEE

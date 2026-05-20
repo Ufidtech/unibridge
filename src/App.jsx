@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+
+import useAutoLogout from "./lib/useAutoLogout";
 import {
   BrowserRouter as Router,
   Route,
@@ -16,6 +18,8 @@ import DevLogin from "./components/DevLogin";
 import { fetchMe } from "./lib/api/auth";
 
 function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
+  // Auto-logout on token expiry/401 (must be inside Router context)
+  useAutoLogout();
   const navigate = useNavigate();
 
   const handleNavigation = (page, data) => {
@@ -96,6 +100,7 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
 function App() {
   const [menteeData, setMenteeData] = useState(null);
   const [mentorData, setMentorData] = useState(null);
+
 
   useEffect(() => {
     const savedPage = localStorage.getItem("currentPage");

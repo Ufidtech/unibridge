@@ -9,7 +9,7 @@ import MentorSchedule from "./MentorSchedule";
 import MentorProfile from "./MentorProfile";
 import MentorRequests from "./MentorRequests";
 import MentorProposals from "./MentorProposals";
-import MentorHistory from './MentorHistory';
+import MentorHistory from "./MentorHistory";
 import {
   fetchSessions,
   updateSessionStatus,
@@ -120,31 +120,46 @@ export default function MentorDashboard({
     }
   };
 
-  const handleAcceptProposal = async (proposal) => {
-    // Instantly remove from screen
-    setProposalsList((prev) => prev.filter((p) => p.id !== proposal.id));
-
+  const handleProposalResponse = async (
+    proposal,
+    status
+  ) => {
+    // Optimistically update proposalsList for instant UI feedback
+    setProposalsList((prev) =>
+      prev.map((p) =>
+        p.id === proposal.id && p.sessionId === proposal.sessionId
+          ? { ...p, status }
+          : p
+      )
+    );
     try {
-      await respondToProposal(proposal.sessionId, proposal.id, "ACCEPTED");
-      toast.success("Proposal accepted");
+      await respondToProposal(
+        proposal.sessionId,
+        proposal.id,
+        status
+      );
+
+      toast.success(
+        status === "ACCEPTED"
+          ? "Proposal accepted"
+          : "Proposal declined"
+      );
+
+      // Reload fresh data from backend to ensure sync
       await loadSessions();
     } catch (err) {
-      toast.error("Failed to accept proposal");
-      await loadSessions();
-    }
-  };
-
-  const handleDeclineProposal = async (proposal) => {
-    // Instantly remove from screen
-    setProposalsList((prev) => prev.filter((p) => p.id !== proposal.id));
-
-    try {
-      await respondToProposal(proposal.sessionId, proposal.id, "DECLINED");
-      toast("Proposal declined");
-      await loadSessions();
-    } catch (err) {
-      toast.error("Failed to decline proposal");
-      await loadSessions();
+      toast.error(
+        err.message ||
+        "Failed to process proposal"
+      );
+      // Optionally revert optimistic update on error
+      setProposalsList((prev) =>
+        prev.map((p) =>
+          p.id === proposal.id && p.sessionId === proposal.sessionId
+            ? { ...p, status: proposal.status || "PENDING" }
+            : p
+        )
+      );
     }
   };
 
@@ -164,7 +179,9 @@ export default function MentorDashboard({
       const requests = allRequests.filter((s) => s.status === "PENDING");
       const confirmed = allRequests.filter((s) => s.status === "CONFIRMED");
       const completed = allRequests.filter((s) => s.status === "COMPLETED");
-      const declined = allRequests.filter((s) => s.status === "DECLINED" || s.status === "CANCELLED");
+      const declined = allRequests.filter(
+        (s) => s.status === "DECLINED" || s.status === "CANCELLED",
+      );
 
       // 2. Set History
       setCompletedSessions(completed);
@@ -173,22 +190,22 @@ export default function MentorDashboard({
       // 3. Process and set Proposals (Show ALL statuses)
       const proposals = allRequests.flatMap((s) =>
         (s.proposals || []).map((p, idx) => ({
+          ...p,
           id: p.id || `${s.id}-${idx}`,
           sessionId: s.id,
           sessionTopic: s.topic,
           menteeName: s.mentee?.name || "Student",
-          status: p.status || "PENDING", // Ensure a fallback status exists
-          ...p,
+          status: p.status,
         }))
       );
-      
+
       setProposalsList(proposals);
 
       // 4. Set Pending Requests
       setPendingRequests(
         requests.map((r) => ({
           ...r,
-          studentName: r.mentee?.name || "Student", 
+          studentName: r.mentee?.name || "Student",
           studentInitials: (r.mentee?.name || "S")
             .split(" ")
             .map((p) => p[0])
@@ -197,7 +214,7 @@ export default function MentorDashboard({
             .toUpperCase(),
           studentClass: r.mentee?.classLevel || "",
           aiQuestions: r.aiQuestions || [],
-        }))
+        })),
       );
 
       // 5. Set Upcoming Sessions
@@ -216,14 +233,17 @@ export default function MentorDashboard({
           date: c.sessionDate,
           time: c.sessionTime,
           meetLink: c.meetLink,
-        }))
+        })),
       );
 
       // 6. Set Stats
       setCompletedSessionsCount(completed.length);
 
       try {
-        const cr = computeAverageRatingFromSessions(allRequests, mentorInfo?.id);
+        const cr = computeAverageRatingFromSessions(
+          allRequests,
+          mentorInfo?.id,
+        );
         setComputedRating(cr);
       } catch (e) {
         // ignore
@@ -437,7 +457,7 @@ export default function MentorDashboard({
               {(() => {
                 // 1. Filter out only the pending proposals
                 const pendingProposals = proposalsList.filter(
-                  (p) => !p.status || p.status === "PENDING"
+                  (p) => !p.status || p.status === "PENDING",
                 );
 
                 // 2. Only show this section if there are actually pending proposals
@@ -461,7 +481,7 @@ export default function MentorDashboard({
                         View All →
                       </button>
                     </div>
-                    
+
                     <div className="space-y-3">
                       {pendingProposals.slice(0, 2).map((p) => (
                         <div
@@ -474,20 +494,22 @@ export default function MentorDashboard({
                                 {p.menteeName} — {p.sessionTopic}
                               </div>
                             </div>
-                            
+
                             <div className="text-slate-400 text-sm mt-1">
                               Proposed: {p.sessionDate} {p.sessionTime} (
                               {p.timezone || "UTC"})
                             </div>
-                            
+
                             {p.notes && (
                               <div className="text-slate-300 text-sm mt-2">
-                                <span className="font-semibold text-slate-400">Note: </span>
+                                <span className="font-semibold text-slate-400">
+                                  Note:{" "}
+                                </span>
                                 {p.notes}
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Action buttons (We know these are always pending now) */}
                           <div className="flex flex-col gap-2 shrink-0 ml-4">
                             <button
@@ -505,7 +527,7 @@ export default function MentorDashboard({
                           </div>
                         </div>
                       ))}
-                      
+
                       {pendingProposals.length > 2 && (
                         <button
                           onClick={() =>
@@ -534,25 +556,29 @@ export default function MentorDashboard({
             />
           )}
 
-          {activeTab === 'schedule' && (
-            <MentorSchedule 
+          {activeTab === "schedule" && (
+            <MentorSchedule
               upcomingSessions={upcomingSessions}
               onJoinMeet={handleJoinMeet}
               onReschedule={handleMentorReschedule}
-              onMarkComplete={(id) => { setProofTargetId(id); setShowProofModal(true); }}
+              onMarkComplete={(id) => {
+                setProofTargetId(id);
+                setShowProofModal(true);
+              }}
             />
           )}
 
-          {activeTab === 'proposals' && (
-            <MentorProposals 
-              proposalsList={proposalsList}
-              onAcceptProposal={handleAcceptProposal}
-              onDeclineProposal={handleDeclineProposal}
-            />
-          )}
+          {activeTab === "proposals" && (
+  <MentorProposals
+    proposalsList={proposalsList}
+    handleProposalResponse={
+      handleProposalResponse
+    }
+  />
+)}
 
-{activeTab === 'history' && (
-            <MentorHistory 
+          {activeTab === "history" && (
+            <MentorHistory
               completedSessions={completedSessions}
               declinedSessions={declinedSessions}
             />

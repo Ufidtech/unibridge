@@ -344,3 +344,89 @@ export function _resetForTests() {
 export function _getEmailPreviews(limit = 20) {
   return emailPreviewStore.slice(0, limit);
 }
+
+export async function updateCalendarEvent({
+  eventId,
+  startDate,
+  endDate,
+  summary,
+  description,
+}) {
+  await initGoogleClientIfNeeded();
+
+  if (!googleClient) {
+    console.log("❌ Google client not initialized");
+
+    return null;
+  }
+
+  try {
+    console.log("📅 Updating Google Calendar Event");
+
+    console.log({
+      calendarId,
+      eventId,
+      startDate,
+      endDate,
+    });
+
+    // Check event exists first
+    const existingEvent =
+      await googleClient.events.get({
+        calendarId,
+        eventId,
+      });
+
+    console.log(
+      "✅ Existing event found:",
+      existingEvent.data.id
+    );
+
+    // Update event
+    const response =
+      await googleClient.events.patch({
+        calendarId,
+        eventId,
+
+        resource: {
+          summary,
+          description,
+
+          start: {
+            dateTime: startDate,
+            timeZone: "UTC",
+          },
+
+          end: {
+            dateTime: endDate,
+            timeZone: "UTC",
+          },
+        },
+
+        sendUpdates: "none",
+      });
+
+    console.log(
+      "✅ Calendar event updated:"
+    );
+
+    console.dir(response.data, {
+      depth: null,
+    });
+
+    return response.data;
+
+  } catch (err) {
+
+    console.log(
+      "❌ UPDATE CALENDAR FAILED"
+    );
+
+    console.dir(
+      err?.response?.data || err,
+      { depth: null }
+    );
+
+    return null;
+  }
+}

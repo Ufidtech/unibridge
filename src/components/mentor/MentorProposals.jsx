@@ -2,8 +2,7 @@ import React from "react";
 
 export default function MentorProposals({
   proposalsList,
-  onAcceptProposal,
-  onDeclineProposal,
+ handleProposalResponse,
 }) {
   return (
     <div>
@@ -20,8 +19,8 @@ export default function MentorProposals({
                   p.status === "ACCEPTED"
                     ? "border-green-500/30"
                     : p.status === "DECLINED"
-                    ? "border-red-500/30"
-                    : "border-slate-800"
+                      ? "border-red-500/30"
+                      : "border-slate-800"
                 }`}
               >
                 <div>
@@ -35,8 +34,8 @@ export default function MentorProposals({
                         p.status === "ACCEPTED"
                           ? "bg-green-500/10 text-green-400"
                           : p.status === "DECLINED"
-                          ? "bg-red-500/10 text-red-400"
-                          : "bg-yellow-500/10 text-yellow-400"
+                            ? "bg-red-500/10 text-red-400"
+                            : "bg-yellow-500/10 text-yellow-400"
                       }`}
                     >
                       {p.status || "PENDING"}
@@ -49,7 +48,9 @@ export default function MentorProposals({
 
                   {p.notes && (
                     <div className="text-slate-300 text-sm mt-2">
-                      <span className="font-semibold text-slate-400">Note: </span>
+                      <span className="font-semibold text-slate-400">
+                        Note:{" "}
+                      </span>
                       {p.notes}
                     </div>
                   )}
@@ -59,15 +60,15 @@ export default function MentorProposals({
                 {isPending && (
                   <div className="flex flex-col gap-2 shrink-0 ml-4">
                     <button
-                      onClick={() => onAcceptProposal(p)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded transition cursor-pointer"
+                      onClick={() => handleProposalResponse(p, "ACCEPTED")}
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded transition cursor-pointer"
                     >
                       Accept
                     </button>
 
                     <button
-                      onClick={() => onDeclineProposal(p)}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold rounded transition cursor-pointer"
+                      onClick={() => handleProposalResponse(p, "DECLINED")}
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition cursor-pointer"
                     >
                       Decline
                     </button>

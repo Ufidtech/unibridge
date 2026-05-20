@@ -142,16 +142,17 @@ export async function proposeNewTime(
   sessionId,
   sessionDate,
   sessionTime,
-  notes
+  notes = ""
 ) {
-  console.log("💡 Proposing new session time:", {
-    sessionId,
-    sessionDate,
-    sessionTime,
-  });
+  if (!sessionDate || !sessionTime) {
+    throw new Error("sessionDate and sessionTime are required");
+  }
 
   return apiRequest(`/api/sessions/${sessionId}/propose`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       sessionDate,
       sessionTime,

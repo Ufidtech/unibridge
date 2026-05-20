@@ -62,8 +62,10 @@ export default function MenteeOnboarding({ onBack = () => {}, onComplete = () =>
             ← {currentStep > 1 ? 'Previous Step' : 'Back to Home'}
           </button>
           <button
+            type="button"
             onClick={() => onNavigate('login')}
             className="text-blue-500 hover:text-blue-400 font-medium transition cursor-pointer"
+            style={{ cursor: 'pointer' }}
           >
             Already have an account? Sign In
           </button>
