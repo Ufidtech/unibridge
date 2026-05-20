@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Select from "react-select";
-import { registerMentor } from "../lib/api/auth";
-import NIGERIA_UNIVERSITIES from "../data/nigeriaUniversities";
+import { registerMentor } from "../../lib/api/auth";
+import NIGERIA_UNIVERSITIES from "../../data/nigeriaUniversities";
 
 export default function MentorOnboarding({
   onBack = () => {},

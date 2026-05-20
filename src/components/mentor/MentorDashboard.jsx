@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import MentorSidebar from "./MentorSidebar";
-import StatCard from "./StatCard";
+import StatCard from "../StatCard";
 import PendingRequest from "./PendingRequest";
 import UpcomingSession from "./UpcomingSession";
 import MentorSchedule from "./MentorSchedule";
@@ -16,12 +16,12 @@ import {
   mentorReschedule,
   respondToProposal,
   mentorComplete,
-} from "../lib/api/sessions";
-import { updateMe, fetchMe } from "../lib/api/auth";
-import { buildMentorPayload } from "../lib/profile";
+} from "../../lib/api/sessions";
+import { updateMe, fetchMe } from "../../lib/api/auth";
+import { buildMentorPayload } from "../../lib/profile";
 import MentorRescheduleModal from "./MentorRescheduleModal";
 import ProofModal from "./ProofModal";
-import { computeAverageRatingFromSessions } from "../lib/ratings";
+import { computeAverageRatingFromSessions } from "../../lib/ratings";
 
 export default function MentorDashboard({
   mentorInfo = { name: "Umar Farooq", role: "Mentor" },

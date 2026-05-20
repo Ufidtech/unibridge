@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { registerMentee } from "../lib/api/auth";
+import { registerMentee } from "../../lib/api/auth";
 
 export default function MenteeAuthOnboarding({
   onBack = () => {},
   onComplete = () => {},
-  onNavigate = () => {},
 }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
@@ -148,7 +147,7 @@ export default function MenteeAuthOnboarding({
           {/* Back Button */}
           <button
             onClick={handleBack}
-            className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 text-sm cursor-pointer"
+            className="text-blue-500 hover:text-blue-400 font-medium transition flex items-center gap-2 text-sm"
           >
             ← {currentStep > 1 ? "Back" : "Back to Home"}
           </button>
@@ -220,7 +219,7 @@ export default function MenteeAuthOnboarding({
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-300 transition cursor-pointer"
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-300 transition"
                   >
                     {showPassword ? (
                       <svg
@@ -256,7 +255,7 @@ export default function MenteeAuthOnboarding({
               {/* Sign In Link */}
               <p className="text-center text-sm text-slate-400">
                 Already have an account?{" "}
-                <button onClick={() => onNavigate('login')} className="text-blue-500 hover:text-blue-400 font-medium transition cursor-pointer">
+                <button className="text-blue-500 hover:text-blue-400 font-medium transition">
                   Sign in
                 </button>
               </p>
@@ -309,7 +308,7 @@ export default function MenteeAuthOnboarding({
                     <button
                       key={className}
                       onClick={() => handleClassSelect(className)}
-                      className={`px-4 py-2 rounded-full font-medium transition cursor-pointer ${
+                      className={`px-4 py-2 rounded-full font-medium transition ${
                         formData.studentClass === className
                           ? "bg-blue-600 text-white border border-blue-500"
                           : "bg-slate-900 text-slate-300 border border-slate-800 hover:border-blue-500"
@@ -363,7 +362,7 @@ export default function MenteeAuthOnboarding({
                   <button
                     key={vibe}
                     onClick={() => handleVibeToggle(vibe)}
-                    className={`px-6 py-3 rounded-lg font-medium transition border cursor-pointer ${
+                    className={`px-6 py-3 rounded-lg font-medium transition border ${
                       formData.selectedVibes.includes(vibe)
                         ? "bg-blue-600 text-white border-blue-500"
                         : "bg-slate-900 text-slate-300 border-slate-800 hover:border-blue-500"
@@ -400,7 +399,7 @@ export default function MenteeAuthOnboarding({
           <button
             onClick={currentStep < totalSteps ? handleContinue : handleSubmit}
             disabled={!canProceedNext() || loading}
-            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition cursor-pointer"
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
           >
             {loading
               ? "Processing..."

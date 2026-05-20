@@ -50,8 +50,8 @@ export default function MenteeProposeModal({ open = true, initialDate = '', init
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 mb-4" rows={3} />
         </div>
         <div className="p-6 border-t border-slate-800 flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded cursor-pointer">Cancel</button>
-          <button onClick={() => onConfirm({ datetime: dateTime ? dateTime.toISOString() : null, notes, timezone })} disabled={!canConfirm} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded disabled:bg-slate-700 cursor-pointer">Propose</button>
+          <button onClick={onClose} className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded">Cancel</button>
+          <button onClick={() => onConfirm({ datetime: dateTime ? dateTime.toISOString() : null, notes, timezone })} disabled={!canConfirm} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded disabled:bg-slate-700">Propose</button>
         </div>
       </div>
     </div>

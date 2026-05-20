@@ -6,12 +6,12 @@ import {
   proposeNewTime,
   rateSession,
   updateSession,
-} from "../lib/api/sessions";
-import { buildSessionPayload } from "../lib/session";
+} from "../../lib/api/sessions";
+import { buildSessionPayload } from "../../lib/session";
 import MenteeProposeModal from "./MenteeProposeModal";
 import RateModal from "./RateModal";
 import BookSessionModal from "./BookSessionModal";
-import SuccessModal from "./SuccessModal";
+import SuccessModal from "../SuccessModal";
 
 // Helper for date formatting
 const isoToDateTimeStrings = (iso, tz) => {

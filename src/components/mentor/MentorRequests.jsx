@@ -1,6 +1,6 @@
 import React from 'react';
 import PendingRequest from './PendingRequest';
-import EmailPreviewPanel from './EmailPreviewPanel';
+import EmailPreviewPanel from '../EmailPreviewPanel';
 
 export default function MentorRequests({
   pendingRequests,

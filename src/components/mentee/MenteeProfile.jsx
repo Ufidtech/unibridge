@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { updateMe } from '../lib/api/auth';
-import { buildMenteePayload } from '../lib/profile';
+import { updateMe } from '../../lib/api/auth';
+import { buildMenteePayload } from '../../lib/profile';
 
 export default function MenteeProfile({ userInfo, universitySuggestions, onNavigate }) {
   const [editingProfile, setEditingProfile] = useState(false);

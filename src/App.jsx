@@ -8,10 +8,10 @@ import {
 import { Toaster } from 'react-hot-toast';
 import LandingPage from "./components/LandingPage";
 import LoginModal from "./components/LoginModal";
-import MenteeAuthOnboarding from "./components/MenteeAuthOnboarding";
-import MentorOnboarding from "./components/MentorOnboarding";
-import MenteeDashboard from "./components/MenteeDashboard";
-import MentorDashboard from "./components/MentorDashboard";
+import MenteeAuthOnboarding from "./components/mentee/MenteeAuthOnboarding";
+import MentorOnboarding from "./components/mentor/MentorOnboarding";
+import MenteeDashboard from "./components/mentee/MenteeDashboard";
+import MentorDashboard from "./components/mentor/MentorDashboard";
 import DevLogin from "./components/DevLogin";
 import { fetchMe } from "./lib/api/auth";
 

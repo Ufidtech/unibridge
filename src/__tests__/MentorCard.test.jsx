@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import MentorCard from '../components/MentorCard';
+import MentorCard from '../components/mentor/MentorCard';
 
 describe('MentorCard', () => {
   it('displays computed rating when provided', () => {

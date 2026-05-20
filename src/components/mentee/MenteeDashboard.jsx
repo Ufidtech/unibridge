@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Sidebar from './Sidebar';
-import AICommandCenter from './AICommandCenter';
-import MentorCard from './MentorCard';
-import MentorExplainModal from './MentorExplainModal';
+import AICommandCenter from '../AICommandCenter';
+import MentorCard from '../mentor/MentorCard';
+import MentorExplainModal from '../mentor/MentorExplainModal';
 import MenteeSessions from './MenteeSessions';
 import MenteeProfile from './MenteeProfile';
-import { createSession } from '../lib/api/sessions'; // Updated to use your new API structure
-import { fetchMentors } from '../lib/api/mentorsApi';
-import { buildSessionPayload } from '../lib/session';
+import { createSession } from '../../lib/api/sessions'; // Updated to use your new API structure
+import { fetchMentors } from '../../lib/api/mentorsApi';
+import { buildSessionPayload } from '../../lib/session';
 import BookSessionModal from './BookSessionModal';
-import SuccessModal from './SuccessModal';
-import NIGERIA_UNIVERSITIES from '../data/nigeriaUniversities';
+import SuccessModal from '../SuccessModal';
+import NIGERIA_UNIVERSITIES from '../../data/nigeriaUniversities';
 
 export default function MenteeDashboard({ userInfo = { name: 'Ibrahim', level: 'SS3' }, onNavigate = () => {} }) {
   const location = useLocation();

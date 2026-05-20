@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { logout } from "../lib/api/auth";
+import { logout } from "../../lib/api/auth";
 
 export default function Sidebar({
   userInfo = { name: "Ibrahim", level: "SS3" },

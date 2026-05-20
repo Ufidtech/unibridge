@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import ProgressBar from './ProgressBar';
-import ChatStep from './ChatStep';
-import VibeSelector from './VibeSelector';
+import ProgressBar from '../ProgressBar';
+import ChatStep from '../ChatStep';
+import VibeSelector from '../VibeSelector';
 
 export default function MenteeOnboarding({ onBack = () => {}, onComplete = () => {}, onNavigate = () => {} }) {
   const [currentStep, setCurrentStep] = useState(1);
