@@ -109,7 +109,8 @@ export default function MentorRescheduleModal({
 
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded"
+            className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded cursor-pointer"
+            type="button"
           >
             Cancel
           </button>
@@ -117,7 +118,8 @@ export default function MentorRescheduleModal({
           <button
             disabled={!canConfirm}
             onClick={handleConfirm}
-            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded disabled:bg-slate-700 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded disabled:bg-slate-700 disabled:cursor-not-allowed cursor-pointer"
+            type="button"
           >
             Reschedule
           </button>
