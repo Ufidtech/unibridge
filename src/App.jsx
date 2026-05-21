@@ -16,6 +16,8 @@ import MenteeDashboard from "./components/mentee/MenteeDashboard";
 import MentorDashboard from "./components/mentor/MentorDashboard";
 import DevLogin from "./components/DevLogin";
 import { fetchMe } from "./lib/api/auth";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsOfService from "./components/TermsOfService";
 
 function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
   // Auto-logout on token expiry/401 (must be inside Router context)
@@ -41,6 +43,8 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
   {/* Dev-only helper route to seed localStorage for quick UI testing */}
   {process.env.NODE_ENV !== 'production' && <Route path="/dev-login" element={<DevLogin />} />}
       <Route path="/" element={<LandingPage onNavigate={handleNavigation} />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route
         path="/login"
         element={
