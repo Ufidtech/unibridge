@@ -22,6 +22,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     env:
+      # For project Pages deployments, Vite assets must be rooted at "/<repo-name>/".
       VITE_BASE_PATH: "/${{ github.event.repository.name }}/"
     steps:
       - name: Checkout
@@ -33,7 +34,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Install dependencies (peer-deps workaround)
         run: npm install --legacy-peer-deps
 
       - name: Build app
