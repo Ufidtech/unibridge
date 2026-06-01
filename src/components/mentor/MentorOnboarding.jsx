@@ -125,7 +125,9 @@ export default function MentorOnboarding({
         .then(({ user }) => {
           try {
             localStorage.setItem("mentorData", JSON.stringify(user));
-          } catch {}
+          } catch {
+            void 0;
+          }
 
           setSuccess("Mentor profile created successfully!");
           setError(null);

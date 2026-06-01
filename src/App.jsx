@@ -7,7 +7,7 @@ import {
   Routes,
   useNavigate,
 } from "react-router-dom";
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from "react-hot-toast";
 import LandingPage from "./components/LandingPage";
 import LoginModal from "./components/LoginModal";
 import MenteeAuthOnboarding from "./components/mentee/MenteeAuthOnboarding";
@@ -40,8 +40,10 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
 
   return (
     <Routes>
-  {/* Dev-only helper route to seed localStorage for quick UI testing */}
-  {process.env.NODE_ENV !== 'production' && <Route path="/dev-login" element={<DevLogin />} />}
+      {/* Dev-only helper route to seed localStorage for quick UI testing */}
+      {import.meta.env.DEV && (
+        <Route path="/dev-login" element={<DevLogin />} />
+      )}
       <Route path="/" element={<LandingPage onNavigate={handleNavigation} />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -102,18 +104,26 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
 }
 
 function App() {
-  const [menteeData, setMenteeData] = useState(null);
-  const [mentorData, setMentorData] = useState(null);
+  const [menteeData, setMenteeData] = useState(() => {
+    try {
+      const raw = localStorage.getItem("menteeData");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
+  const [mentorData, setMentorData] = useState(() => {
+    try {
+      const raw = localStorage.getItem("mentorData");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     const savedPage = localStorage.getItem("currentPage");
-
-    const savedMenteeData = localStorage.getItem("menteeData");
-    const savedMentorData = localStorage.getItem("mentorData");
-
-    if (savedMenteeData) setMenteeData(JSON.parse(savedMenteeData));
-    if (savedMentorData) setMentorData(JSON.parse(savedMentorData));
 
     const idToken = localStorage.getItem("idToken");
     if (idToken) {

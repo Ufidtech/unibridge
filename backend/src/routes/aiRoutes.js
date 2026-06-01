@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { generateMentorResponse, recommendMentors, generateMentorResponseForSession } from '../services/mentorAi.js';
+import { recommendMentors, generateMentorResponseForSession, generateMenteePrepSheet } from '../services/mentorAi.js';
 
 const router = Router();
 
-router.post('/mentor-response', async (req, res, next) => {
+router.post('/mentor-response', async (req, res) => {
   try {
     const { prompt, sessionId } = req.body ?? {};
 
@@ -46,6 +46,24 @@ router.post('/recommend-mentors', async (req, res, next) => {
     return res.json({ mentors: out });
   } catch (error) {
     return next(error);
+  }
+});
+
+router.post('/generate-prep-sheet', async (req, res) => {
+  try {
+    const { studentInput } = req.body ?? {};
+
+    if (!studentInput || !studentInput.trim()) {
+      return res.status(400).json({ error: 'studentInput is required.' });
+    }
+
+    const prepSheet = await generateMenteePrepSheet(studentInput.trim());
+    return res.json({ prepSheet });
+  } catch (error) {
+    console.error('Prep Sheet Gen Error:', error);
+    console.error('Prep Sheet Gen Error Message:', error?.message);
+    console.error('Prep Sheet Gen Error Status:', error?.status || error?.response?.status);
+    return res.status(503).json({ message: 'Failed to generate prep sheet' });
   }
 });
 

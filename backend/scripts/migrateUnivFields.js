@@ -23,7 +23,7 @@ async function run() {
     const arrText = raw.slice(arrStart);
     // eslint-disable-next-line no-eval
     list = eval('(' + arrText + ')');
-  } catch (e) {
+  } catch {
     console.warn('Failed to load local university list, migration will copy existing value into universityName');
   }
 

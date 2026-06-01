@@ -1,4 +1,4 @@
-import React from 'react';
+// React import not required in modern JSX runtimes
 
 export default function MentorProfile({
   editingProfile,
@@ -9,66 +9,91 @@ export default function MentorProfile({
   loadingProfile,
   mentorInfo,
   computedRating,
-  onSave
+  onSave,
 }) {
   return (
     <div>
       <h2 className="text-2xl font-bold text-slate-100 mb-6">👤 My Profile</h2>
-      
+
       {/* Profile Content */}
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-8">
         {editingProfile ? (
           <div className="space-y-6">
             {/* Edit Form */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Full Name
+              </label>
               <input
                 type="text"
-                value={profileForm.name || fullMentorProfile?.name || mentorInfo?.name || ''}
-                onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                value={
+                  profileForm.name ||
+                  fullMentorProfile?.name ||
+                  mentorInfo?.name ||
+                  ""
+                }
+                onChange={(e) =>
+                  setProfileForm({ ...profileForm, name: e.target.value })
+                }
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
                 placeholder="Your full name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Email
+              </label>
               <input
                 type="email"
-                value={fullMentorProfile?.email || ''}
+                value={fullMentorProfile?.email || ""}
                 disabled
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-400 cursor-not-allowed"
               />
-              <p className="text-xs text-slate-400 mt-1">Email cannot be changed</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Email cannot be changed
+              </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Title / Role</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Title / Role
+              </label>
               <input
                 type="text"
-                value={profileForm.title || ''}
-                onChange={(e) => setProfileForm({ ...profileForm, title: e.target.value })}
+                value={profileForm.title || ""}
+                onChange={(e) =>
+                  setProfileForm({ ...profileForm, title: e.target.value })
+                }
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
                 placeholder="e.g., Senior Software Engineer"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">University</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                University
+              </label>
               <input
                 type="text"
-                value={profileForm.university || ''}
-                onChange={(e) => setProfileForm({ ...profileForm, university: e.target.value })}
+                value={profileForm.university || ""}
+                onChange={(e) =>
+                  setProfileForm({ ...profileForm, university: e.target.value })
+                }
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
                 placeholder="Your university"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Bio / About</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Bio / About
+              </label>
               <textarea
-                value={profileForm.bio || ''}
-                onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
+                value={profileForm.bio || ""}
+                onChange={(e) =>
+                  setProfileForm({ ...profileForm, bio: e.target.value })
+                }
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500 resize-none"
                 placeholder="Tell mentees about yourself..."
                 rows="4"
@@ -76,21 +101,32 @@ export default function MentorProfile({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Expertise (comma-separated)</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Expertise (comma-separated)
+              </label>
               <input
                 type="text"
-                value={profileForm.expertise || ''}
-                onChange={(e) => setProfileForm({ ...profileForm, expertise: e.target.value })}
+                value={profileForm.expertise || ""}
+                onChange={(e) =>
+                  setProfileForm({ ...profileForm, expertise: e.target.value })
+                }
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
                 placeholder="e.g., React, JavaScript, Web Development"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Availability / Response Time</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Availability / Response Time
+              </label>
               <select
-                value={profileForm.responseTime || ''}
-                onChange={(e) => setProfileForm({ ...profileForm, responseTime: e.target.value })}
+                value={profileForm.responseTime || ""}
+                onChange={(e) =>
+                  setProfileForm({
+                    ...profileForm,
+                    responseTime: e.target.value,
+                  })
+                }
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
               >
                 <option value="">Select availability</option>
@@ -124,36 +160,66 @@ export default function MentorProfile({
             ) : (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Full Name</label>
-                  <p className="text-slate-100 font-medium">{fullMentorProfile?.name || mentorInfo?.name || 'Not set'}</p>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Full Name
+                  </label>
+                  <p className="text-slate-100 font-medium">
+                    {fullMentorProfile?.name || mentorInfo?.name || "Not set"}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
-                  <p className="text-slate-100 font-medium">{fullMentorProfile?.email || 'Not set'}</p>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Email
+                  </label>
+                  <p className="text-slate-100 font-medium">
+                    {fullMentorProfile?.email || "Not set"}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Title / Role</label>
-                  <p className="text-slate-100 font-medium">{fullMentorProfile?.title || mentorInfo?.title || 'Not set'}</p>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Title / Role
+                  </label>
+                  <p className="text-slate-100 font-medium">
+                    {fullMentorProfile?.title || mentorInfo?.title || "Not set"}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">University</label>
-                  <p className="text-slate-100 font-medium">{fullMentorProfile?.universityName || fullMentorProfile?.university || mentorInfo?.university || 'Not set'}</p>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    University
+                  </label>
+                  <p className="text-slate-100 font-medium">
+                    {fullMentorProfile?.universityName ||
+                      fullMentorProfile?.university ||
+                      mentorInfo?.university ||
+                      "Not set"}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Bio</label>
-                  <p className="text-slate-100">{fullMentorProfile?.bio || mentorInfo?.bio || 'Not set'}</p>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Bio
+                  </label>
+                  <p className="text-slate-100">
+                    {fullMentorProfile?.bio || mentorInfo?.bio || "Not set"}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Expertise / Skills</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Expertise / Skills
+                  </label>
                   <div className="flex flex-wrap gap-2">
-                    {fullMentorProfile?.skills && Array.isArray(fullMentorProfile.skills) && fullMentorProfile.skills.length > 0 ? (
+                    {fullMentorProfile?.skills &&
+                    Array.isArray(fullMentorProfile.skills) &&
+                    fullMentorProfile.skills.length > 0 ? (
                       fullMentorProfile.skills.map((skill, idx) => (
-                        <span key={idx} className="px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full text-sm">
+                        <span
+                          key={idx}
+                          className="px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full text-sm"
+                        >
                           {skill}
                         </span>
                       ))
@@ -164,17 +230,27 @@ export default function MentorProfile({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Availability / Response Time</label>
-                  <p className="text-slate-100">{fullMentorProfile?.responseTime || 'Not set'}</p>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Availability / Response Time
+                  </label>
+                  <p className="text-slate-100">
+                    {fullMentorProfile?.responseTime || "Not set"}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Average Rating</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Average Rating
+                  </label>
                   <p className="text-slate-100 font-medium">
-                    {computedRating?.average ? `${computedRating.average.toFixed(1)} ⭐` : 'No ratings yet'}
+                    {computedRating?.average
+                      ? `${computedRating.average.toFixed(1)} ⭐`
+                      : "No ratings yet"}
                   </p>
                   {computedRating?.count > 0 && (
-                    <p className="text-slate-400 text-sm">Based on {computedRating.count} reviews</p>
+                    <p className="text-slate-400 text-sm">
+                      Based on {computedRating.count} reviews
+                    </p>
                   )}
                 </div>
 

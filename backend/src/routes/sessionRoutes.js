@@ -93,17 +93,7 @@ async function parseSessionISO(sessionDate, sessionTime, timezone = "UTC") {
   }
 }
 
-function makeMeetCode(id) {
-  const clean = String(id).replace(/[^a-z0-9]/gi, "");
-
-  const a = clean.slice(0, 3) || Math.random().toString(36).slice(2, 5);
-
-  const b = clean.slice(3, 7) || Math.random().toString(36).slice(2, 6);
-
-  const c = clean.slice(7, 10) || Math.random().toString(36).slice(2, 5);
-
-  return `${a}-${b}-${c}`.toLowerCase();
-}
+// meet code helper removed (unused)
 
 function mapSessionDoc(doc) {
   const data = doc.data();
@@ -157,9 +147,8 @@ async function createCalendarForSession(session) {
     const event = await createCalendarEvent({
       summary: `Mentor Session: ${session.topic}`,
 
-      description: `Session between ${
-        session.mentee?.name || "Mentee"
-      } and ${session.mentor?.name || "Mentor"}`,
+      description: `Session between ${session.mentee?.name || "Mentee"
+        } and ${session.mentor?.name || "Mentor"}`,
 
       startDate: parsed.startISO,
       endDate: parsed.endISO,
@@ -825,27 +814,27 @@ router.patch(
       }
 
       // Current UTC timestamp
-const now = Date.now();
+      const now = Date.now();
 
-// Parsed session timestamp
-const sessionTimestamp =
-  new Date(parsed.startISO).getTime();
+      // Parsed session timestamp
+      const sessionTimestamp =
+        new Date(parsed.startISO).getTime();
 
-console.log("Current:", new Date(now));
-console.log(
-  "Requested:",
-  new Date(sessionTimestamp)
-);
+      console.log("Current:", new Date(now));
+      console.log(
+        "Requested:",
+        new Date(sessionTimestamp)
+      );
 
-if (
-  isNaN(sessionTimestamp) ||
-  sessionTimestamp <= now
-) {
-  return res.status(400).json({
-    error:
-      "Cannot select a past date or time.",
-  });
-}
+      if (
+        isNaN(sessionTimestamp) ||
+        sessionTimestamp <= now
+      ) {
+        return res.status(400).json({
+          error:
+            "Cannot select a past date or time.",
+        });
+      }
 
       // -------------------------
       // UPDATE GOOGLE EVENT
@@ -875,12 +864,10 @@ if (
                 `Mentor Session: ${session.topic}`,
 
               description:
-                `Session between ${
-                  session.mentee?.name ||
-                  "Mentee"
-                } and ${
-                  session.mentor?.name ||
-                  "Mentor"
+                `Session between ${session.mentee?.name ||
+                "Mentee"
+                } and ${session.mentor?.name ||
+                "Mentor"
                 }`,
             });
 
@@ -1030,9 +1017,10 @@ router.post(
         });
       }
 
-      if (session.status !== "CONFIRMED") {
+      // Allow proposing a new time for any non-terminal session
+      if (["COMPLETED", "CANCELLED", "DECLINED"].includes(session.status)) {
         return res.status(400).json({
-          error: "You can only propose a new time for confirmed sessions.",
+          error: "Cannot propose a new time for completed/cancelled/declined sessions.",
         });
       }
       const proposal = {
@@ -1053,6 +1041,7 @@ router.post(
       await sessionRef.set(
         {
           proposals,
+          status: 'PROPOSED',
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
@@ -1082,7 +1071,7 @@ ${proposal.notes || "No notes"}
         });
       }
 
-      return res.json({
+      return res.status(201).json({
         success: true,
         proposal,
       });
@@ -1128,10 +1117,10 @@ router.patch(
         });
       }
 
-      // Only confirmed sessions support proposal responses
-      if (session.status !== "CONFIRMED") {
+      // Allow confirmed or proposed sessions to process proposal responses
+      if (!["CONFIRMED", "PROPOSED"].includes(session.status)) {
         return res.status(400).json({
-          error: "Only confirmed sessions can process proposals.",
+          error: "Only confirmed or proposed sessions can process proposals.",
         });
       }
       const proposals = Array.isArray(session.proposals)
@@ -1184,104 +1173,122 @@ router.patch(
       // Optional:
       // If accepted, automatically update session time
       // Optional:
-// If accepted, automatically update session + calendar
+      // If accepted, automatically update session + calendar
 
-let sessionUpdates = {};
+      let sessionUpdates = {};
 
-if (body.status === "ACCEPTED" && targetProposal) {
+      if (body.status === "ACCEPTED" && targetProposal) {
 
-  const timezone =
-    targetProposal.timezone ||
-    session.timezone ||
-    "UTC";
+        const timezone =
+          targetProposal.timezone ||
+          session.timezone ||
+          "UTC";
 
-  const parsed = await parseSessionISO(
-    targetProposal.sessionDate,
-    targetProposal.sessionTime,
-    timezone
-  );
+        let parsed = await parseSessionISO(
+          targetProposal.sessionDate,
+          targetProposal.sessionTime,
+          timezone
+        );
 
-  if (!parsed) {
-    return res.status(400).json({
-      error: "Invalid proposal date/time",
-    });
-  }
+        if (!parsed) {
+          // Attempt a tolerant fallback: build an ISO using UTC if possible
+          try {
+            const formattedTime =
+              (targetProposal.sessionTime || '').length === 5
+                ? `${targetProposal.sessionTime}:00`
+                : targetProposal.sessionTime || '00:00:00';
+            const startDate = new Date(`${targetProposal.sessionDate}T${formattedTime}Z`);
+            if (!isNaN(startDate.getTime())) {
+              parsed = {
+                startISO: startDate.toISOString(),
+                endISO: new Date(startDate.getTime() + SESSION_DURATION_MINUTES * 60 * 1000).toISOString(),
+                timezone: 'UTC',
+              };
+            }
+          } catch {
+            parsed = null;
+          }
+        }
 
-  const proposedStart = new Date(
-    parsed.startISO
-  );
+        if (!parsed) {
+          return res.status(400).json({
+            error: "Invalid proposal date/time",
+          });
+        }
 
-  if (proposedStart <= new Date()) {
-    return res.status(400).json({
-      error:
-        "Cannot accept a proposal in the past",
-    });
-  }
+        const proposedStart = new Date(
+          parsed.startISO
+        );
 
-  if (session.calendarEventId) {
-    try {
-      await updateCalendarEvent({
-        eventId: session.calendarEventId,
-        startDate: parsed.startISO,
-        endDate: parsed.endISO,
-        summary: `Mentor Session: ${session.topic}`,
-        description: `Session between ${
-          session.mentee?.name || "Mentee"
-        } and ${
-          session.mentor?.name || "Mentor"
-        }`,
-      });
+        if (proposedStart <= new Date()) {
+          return res.status(400).json({
+            error:
+              "Cannot accept a proposal in the past",
+          });
+        }
 
-    } catch (err) {
-      return res.status(500).json({
-        error:
-          "Failed to update calendar event",
-      });
-    }
-  }
+        if (session.calendarEventId) {
+          try {
+            await updateCalendarEvent({
+              eventId: session.calendarEventId,
+              startDate: parsed.startISO,
+              endDate: parsed.endISO,
+              summary: `Mentor Session: ${session.topic}`,
+              description: `Session between ${session.mentee?.name || "Mentee"
+                } and ${session.mentor?.name || "Mentor"
+                }`,
+            });
 
-  sessionUpdates = {
-    sessionDate:
-      targetProposal.sessionDate,
+          } catch {
+            return res.status(500).json({
+              error:
+                "Failed to update calendar event",
+            });
+          }
+        }
 
-    sessionTime:
-      targetProposal.sessionTime,
+        sessionUpdates = {
+          sessionDate:
+            targetProposal.sessionDate,
 
-    timezone,
+          sessionTime:
+            targetProposal.sessionTime,
 
-    status: "CONFIRMED",
-  };
-}
+          timezone,
 
-
-// =====================
-// SAVE TO FIRESTORE
-// =====================
-
-await sessionRef.set(
-  {
-    proposals: updatedProposals,
-    ...sessionUpdates,
-    updatedAt:
-      new Date().toISOString(),
-  },
-  {
-    merge: true,
-  }
-);
+          status: "CONFIRMED",
+        };
+      }
 
 
-// Get fresh version
-const updatedDoc =
-  await sessionRef.get();
+      // =====================
+      // SAVE TO FIRESTORE
+      // =====================
 
-const updatedSession =
-  updatedDoc.data();
+      await sessionRef.set(
+        {
+          proposals: updatedProposals,
+          ...sessionUpdates,
+          updatedAt:
+            new Date().toISOString(),
+        },
+        {
+          merge: true,
+        }
+      );
 
-console.log(
-  "✅ Saved proposal response:",
-  updatedSession.proposals
-);
+
+      // Get fresh version
+      const updatedDoc =
+        await sessionRef.get();
+
+      const updatedSession =
+        updatedDoc.data();
+
+      console.log(
+        "✅ Saved proposal response:",
+        updatedSession.proposals
+      );
 
       // -------------------------
       // EMAIL TO MENTEE
@@ -1313,6 +1320,7 @@ Topic: ${session.topic}
 
       return res.json({
         success: true,
+        sessionRequest: updatedSession,
         proposal: targetProposal,
       });
     } catch (err) {

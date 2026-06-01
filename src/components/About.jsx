@@ -12,39 +12,118 @@ export default function About() {
 
         {/* Main Content Grid: Text (Left) + Founder Card (Right) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-          {/* Left: Vision & Why */}
-          <div className="space-y-6">
-            {/* The Vision */}
-            <div>
-              <h3 className="text-xl font-semibold text-blue-500 mb-3">
-                The Near-Peer Model
-              </h3>
-              <p className="text-slate-300 leading-relaxed">
-                University students aren't just older—they're recent. They remember the exact struggles
-                you face: the late-night JAMB prep, the fear of campus, the uncertainty about your tech
-                career. We connect secondary school students (JSS3–SS3) with undergraduates who've lived
-                through what you're about to experience. That small age gap? It's everything. We speak
-                your language, understand your fears, and show you the path that actually works.
-              </p>
+          {/* Left: Mission Cards Grid */}
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Card 1 */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:shadow-2xl hover:border-blue-500 transition-transform transform hover:-translate-y-1">
+                <div className="flex items-center justify-center mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-8 h-8 text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 14l9-5-9-5-9 5 9 5z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 14l6.16-3.422A12.083 12.083 0 0119 19.5c0 .667-.06 1.313-.174 1.928L12 14z"
+                    />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">
+                  Mentors Who Just Lived It
+                </h4>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Your mentors aren't just older—they were in your shoes
+                  yesterday. Connect with undergrads who know exactly how to
+                  beat late-night JAMB prep and campus anxiety.
+                </p>
+              </div>
+
+              {/* Card 2 */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:shadow-2xl hover:border-blue-500 transition-transform transform hover:-translate-y-1">
+                <div className="flex items-center justify-center mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-8 h-8 text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2-1.343-2-3-2z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 14c-4.418 0-8 1.79-8 4v1h16v-1c0-2.21-3.582-4-8-4z"
+                    />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">
+                  Beyond the Books
+                </h4>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Acing JAMB is just the start. We teach the "hidden
+                  curriculum": how to network, secure internships, and thrive in
+                  tech while still in school.
+                </p>
+              </div>
+
+              {/* Card 3 */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:shadow-2xl hover:border-blue-500 transition-transform transform hover:-translate-y-1">
+                <div className="flex items-center justify-center mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-8 h-8 text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12l2 2 4-4"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7 10V7a5 5 0 0110 0v3"
+                    />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-bold text-white mb-2">
+                  Your Shortcut to Success
+                </h4>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Stop guessing. Get guided by someone who walked your exact
+                  path just a few months ago, speaking your language and
+                  understanding your fears.
+                </p>
+              </div>
             </div>
 
-            {/* The Why */}
-            <div>
-              <h3 className="text-xl font-semibold text-blue-500 mb-3">
-                Survival & Reality
-              </h3>
-              <p className="text-slate-300 leading-relaxed">
-                This isn't about acing JAMB alone—it's about surviving university and thriving in tech.
-                We teach you the hidden curriculum: how to build real projects, how to network, how to
-                secure internships, and how to start your career while still in school. Unibridge is your
-                shortcut to success, guided by people who've walked the path just months or years before you.
-              </p>
-            </div>
-
-            {/* Secondary CTA */}
             <div className="pt-6">
               <p className="text-sm text-slate-400">
-                Join a growing community of mentors and mentees reshaping education in Nigeria.
+                Join a growing community of mentors and mentees reshaping
+                education in Nigeria.
               </p>
             </div>
           </div>
@@ -61,9 +140,15 @@ export default function About() {
 
               {/* Founder Info */}
               <div className="text-center mb-6">
-                <h4 className="text-xl font-bold text-white">Ibrahim Danjuma</h4>
-                <p className="text-sm text-blue-400 font-medium">300L CS Student</p>
-                <p className="text-sm text-slate-400">Microsoft Learn Student Ambassador</p>
+                <h4 className="text-xl font-bold text-white">
+                  Ibrahim Danjuma
+                </h4>
+                <p className="text-sm text-blue-400 font-medium">
+                  300L CS Student
+                </p>
+                <p className="text-sm text-slate-400">
+                  Microsoft Learn Student Ambassador
+                </p>
               </div>
 
               {/* Divider */}

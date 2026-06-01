@@ -33,13 +33,13 @@ const isoToDateTimeStrings = (iso, tz) => {
       hour12: false,
     }).format(dt);
     return { date, time };
-  } catch (e) {
+  } catch {
     const s = dt.toISOString();
     return { date: s.slice(0, 10), time: s.slice(11, 16) };
   }
 };
 
-export default function MenteeSessions({ onNavigate, mentors }) {
+export default function MenteeSessions({ onNavigate }) {
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [sessionsError, setSessionsError] = useState(null);
@@ -51,7 +51,7 @@ export default function MenteeSessions({ onNavigate, mentors }) {
   const [showRateModal, setShowRateModal] = useState(false);
   const [rateTargetId, setRateTargetId] = useState(null);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
-  const [rescheduleSessionId, setRescheduleSessionId] = useState(null);
+  const [rescheduleSessionId] = useState(null);
   const [selectedMentorForReschedule, setSelectedMentorForReschedule] =
     useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -60,9 +60,10 @@ export default function MenteeSessions({ onNavigate, mentors }) {
   const fetchUpdatedSessions = async () => {
     try {
       const data = await fetchSessions();
-      setSessions(
-        Array.isArray(data.sessionRequests) ? data.sessionRequests : [],
-      );
+      const list = Array.isArray(data.sessionRequests)
+        ? data.sessionRequests
+        : [];
+      setSessions(list.filter((session) => session.status !== "CANCELLED"));
     } catch (err) {
       setSessionsError(String(err.message || err));
     }
@@ -90,16 +91,7 @@ export default function MenteeSessions({ onNavigate, mentors }) {
     }
   };
 
-  const handleOpenReschedule = (session) => {
-    const mentor = session.mentor ||
-      mentors.find((m) => m.id === session.mentorId) || {
-        id: session.mentorId,
-        name: session.mentor?.name || "Mentor",
-      };
-    setSelectedMentorForReschedule(mentor);
-    setRescheduleSessionId(session.id);
-    setShowRescheduleModal(true);
-  };
+  // handleOpenReschedule removed (unused)
 
   const handleConfirmReschedule = async (sessionData) => {
     try {
@@ -139,6 +131,7 @@ export default function MenteeSessions({ onNavigate, mentors }) {
         date: res.sessionRequest.sessionDate,
         time: res.sessionRequest.sessionTime,
         meetLink: res.sessionRequest.meetLink,
+        aiPrepSheet: sessionData.aiPrepSheet || null,
       });
 
       setShowRescheduleModal(false);
@@ -203,70 +196,68 @@ export default function MenteeSessions({ onNavigate, mentors }) {
               )}
 
               <div className="mt-4 flex flex-wrap gap-2">
+                {/* Actions: join/propose only for CONFIRMED; cancel allowed for most active statuses */}
+                {s.status === "CONFIRMED" && (
+                  <>
+                    {/* Join Meeting */}
+                    {s.meetLink && (
+                      <a
+                        href={s.meetLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 bg-green-600 text-white rounded cursor-pointer hover:bg-green-700 transition"
+                      >
+                        Join Meeting
+                      </a>
+                    )}
 
-  {/* ONLY CONFIRMED SESSIONS */}
-  {s.status === "CONFIRMED" && (
-    <>
-      {/* Join Meeting */}
-      {s.meetLink && (
-        <a
-          href={s.meetLink}
-          target="_blank"
-          rel="noreferrer"
-          className="px-3 py-2 bg-green-600 text-white rounded cursor-pointer hover:bg-green-700 transition"
-        >
-          Join Meeting
-        </a>
-      )}
+                    {/* Propose New Time */}
+                    <button
+                      onClick={() => {
+                        setProposeSessionId(s.id);
+                        setShowProposeModal(true);
+                      }}
+                      className="px-3 py-2 bg-yellow-600 text-white rounded cursor-pointer hover:bg-yellow-700 transition"
+                    >
+                      Propose new time
+                    </button>
+                  </>
+                )}
 
-      {/* Propose New Time */}
-      <button
-        onClick={() => {
-          setProposeSessionId(s.id);
-          setShowProposeModal(true);
-        }}
-        className="px-3 py-2 bg-yellow-600 text-white rounded cursor-pointer hover:bg-yellow-700 transition"
-      >
-        Propose new time
-      </button>
+                {/* Cancel is allowed for any session that is not completed, cancelled or declined */}
+                {!["COMPLETED", "CANCELLED", "DECLINED"].includes(s.status) && (
+                  <button
+                    onClick={() => handleCancelClick(s.id)}
+                    className="px-3 py-2 bg-red-600 text-white rounded cursor-pointer hover:bg-red-700 transition"
+                  >
+                    {confirmCancelFor === s.id ? "Confirm cancel" : "Cancel"}
+                  </button>
+                )}
 
-      {/* Cancel */}
-      <button
-        onClick={() => handleCancelClick(s.id)}
-        className="px-3 py-2 bg-red-600 text-white rounded cursor-pointer hover:bg-red-700 transition"
-      >
-        {confirmCancelFor === s.id
-          ? "Confirm cancel"
-          : "Cancel"}
-      </button>
-    </>
-  )}
+                {/* COMPLETED SESSION */}
+                {s.status === "COMPLETED" &&
+                  s.proof &&
+                  (() => {
+                    const alreadyRated =
+                      Array.isArray(s.ratings) && s.ratings.length > 0;
 
-  {/* COMPLETED SESSION */}
-  {s.status === "COMPLETED" &&
-    s.proof &&
-    (() => {
-      const alreadyRated =
-        Array.isArray(s.ratings) &&
-        s.ratings.length > 0;
-
-      return alreadyRated ? (
-        <span className="px-3 py-2 bg-indigo-600/20 text-indigo-400 border border-indigo-600/30 rounded font-medium flex items-center gap-1 cursor-default">
-          ⭐ Rated
-        </span>
-      ) : (
-        <button
-          onClick={() => {
-            setRateTargetId(s.id);
-            setShowRateModal(true);
-          }}
-          className="px-3 py-2 bg-indigo-600 text-white rounded cursor-pointer hover:bg-indigo-700 transition"
-        >
-          Rate Mentor
-        </button>
-      );
-    })()}
-</div>
+                    return alreadyRated ? (
+                      <span className="px-3 py-2 bg-indigo-600/20 text-indigo-400 border border-indigo-600/30 rounded font-medium flex items-center gap-1 cursor-default">
+                        ⭐ Rated
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setRateTargetId(s.id);
+                          setShowRateModal(true);
+                        }}
+                        className="px-3 py-2 bg-indigo-600 text-white rounded cursor-pointer hover:bg-indigo-700 transition"
+                      >
+                        Rate Mentor
+                      </button>
+                    );
+                  })()}
+              </div>
 
               {Array.isArray(s.proposals) && s.proposals.length > 0 && (
                 <div className="mt-4 text-sm text-slate-400 border-t border-slate-800 pt-3">

@@ -11,7 +11,7 @@ async function req(path, method = 'GET', body = null, token = null) {
   });
   const text = await res.text();
   let json;
-  try { json = JSON.parse(text); } catch (e) { json = text; }
+  try { json = JSON.parse(text); } catch { json = text; }
   return { status: res.status, body: json };
 }
 
@@ -33,7 +33,7 @@ async function req(path, method = 'GET', body = null, token = null) {
     console.log('mentee register', r.status, r.body);
     if (r.status !== 201) throw new Error('mentee registration failed');
     const menteeToken = r.body.customToken;
-    const menteeUid = r.body.user.uid;
+    // mentee uid available in response if needed: r.body.user.uid
 
     console.log('Registering mentor:', mentorEmail);
     r = await req('/auth/register/mentor', 'POST', {

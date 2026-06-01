@@ -1,8 +1,8 @@
-import React from "react";
+// React import not required in modern JSX runtimes
 
 export default function MentorProposals({
   proposalsList,
- handleProposalResponse,
+  handleProposalResponse,
 }) {
   return (
     <div>

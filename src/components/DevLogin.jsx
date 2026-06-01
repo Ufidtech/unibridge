@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Dev helper: registers a dev mentee with backend, seeds localStorage with returned token/user,
 // then redirects to mentee dashboard. This keeps frontend auth consistent with backend mock.
@@ -14,23 +14,23 @@ export default function DevLogin() {
         const now = Date.now();
         const email = `dev-mentee-${now}@example.com`;
         const payload = {
-          name: 'Dev Mentee',
+          name: "Dev Mentee",
           email,
-          password: 'devpass123',
-          school: 'Dev HS',
-          classLevel: 'SS3',
+          password: "devpass123",
+          school: "Dev HS",
+          classLevel: "SS3",
         };
 
         // call backend register endpoint
-        const res = await fetch('/api/auth/register/mentee', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/auth/register/mentee", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
 
         if (!res.ok) {
           // fallback to local-only seed
-          throw new Error('backend register failed');
+          throw new Error("backend register failed");
         }
 
         const data = await res.json();
@@ -38,42 +38,58 @@ export default function DevLogin() {
         const token = data.customToken;
 
         if (mounted) {
-          localStorage.setItem('idToken', token || `mock:${user?.uid || 'dev'}`);
-          localStorage.setItem('menteeData', JSON.stringify(user || { name: 'Dev Mentee', id: user?.uid }));
-          localStorage.setItem('currentPage', '/mentee-dashboard');
-          setTimeout(() => navigate('/mentee-dashboard'), 200);
+          localStorage.setItem(
+            "idToken",
+            token || `mock:${user?.uid || "dev"}`,
+          );
+          localStorage.setItem(
+            "menteeData",
+            JSON.stringify(user || { name: "Dev Mentee", id: user?.uid }),
+          );
+          localStorage.setItem("currentPage", "/mentee-dashboard");
+          setTimeout(() => navigate("/mentee-dashboard"), 200);
         }
-      } catch (e) {
+      } catch {
         // fallback: seed only frontend-local data
         try {
           const now = Date.now();
           const user = {
             uid: `dev-mentee-${now}`,
             id: `dev-mentee-${now}`,
-            name: 'Dev Mentee',
+            name: "Dev Mentee",
             email: `dev-mentee-${now}@example.com`,
-            role: 'MENTEE',
-            menteeProfile: { school: 'Dev HS', classLevel: 'SS3', dreamCourse: 'Computer Science' },
+            role: "MENTEE",
+            menteeProfile: {
+              school: "Dev HS",
+              classLevel: "SS3",
+              dreamCourse: "Computer Science",
+            },
           };
-          localStorage.setItem('idToken', `mock:${user.uid}`);
-          localStorage.setItem('menteeData', JSON.stringify(user));
-          localStorage.setItem('currentPage', '/mentee-dashboard');
-        } catch (e2) {
-          // ignore
+          localStorage.setItem("idToken", `mock:${user.uid}`);
+          localStorage.setItem("menteeData", JSON.stringify(user));
+          localStorage.setItem("currentPage", "/mentee-dashboard");
+        } catch {
+          void 0;
         }
-        if (mounted) setTimeout(() => navigate('/mentee-dashboard'), 200);
+        if (mounted) setTimeout(() => navigate("/mentee-dashboard"), 200);
       }
     }
 
     registerDev();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [navigate]);
 
   return (
     <div className="p-8">
-      <h2 className="text-xl font-semibold">Dev login: registering and seeding credentials...</h2>
-      <p className="text-slate-400">You will be redirected to the mentee dashboard shortly.</p>
+      <h2 className="text-xl font-semibold">
+        Dev login: registering and seeding credentials...
+      </h2>
+      <p className="text-slate-400">
+        You will be redirected to the mentee dashboard shortly.
+      </p>
     </div>
   );
 }

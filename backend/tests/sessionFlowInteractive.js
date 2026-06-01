@@ -11,7 +11,7 @@ async function req(path, method = 'GET', body = null, token = null) {
   });
   const text = await res.text();
   let json;
-  try { json = JSON.parse(text); } catch (e) { json = text; }
+  try { json = JSON.parse(text); } catch { json = text; }
   return { status: res.status, body: json };
 }
 
@@ -27,7 +27,7 @@ async function req(path, method = 'GET', body = null, token = null) {
     console.log('/auth/register/mentee', r.status, JSON.stringify(r.body, null, 2));
     if (r.status !== 201) return;
     const menteeToken = r.body.customToken;
-    const menteeUid = r.body.user.uid;
+    // mentee uid available in response if needed: r.body.user.uid
 
     // register mentor
     r = await req('/auth/register/mentor', 'POST', { name: 'Interactive Mentor', email: mentorEmail, password: 'password123' });

@@ -14,7 +14,7 @@ async function postJson(path, body) {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    let errorMessage = res.statusText;
+    let errorMessage;
     try {
       const errorData = await res.json();
       errorMessage = errorData.error || errorData.message || res.statusText;
@@ -57,7 +57,7 @@ export async function registerMentee(payload) {
       err?.message ||
       "Registration failed. Please try again.";
 
-    throw new Error(errorMessage);
+    throw new Error(errorMessage, { cause: err });
   }
 }
 
@@ -96,7 +96,7 @@ export async function registerMentor(payload) {
       err?.message ||
       "Registration failed. Please try again.";
 
-    throw new Error(errorMessage);
+    throw new Error(errorMessage, { cause: err });
   }
 }
 
@@ -177,10 +177,10 @@ export async function loginMentee(email, password) {
       msg.includes("auth/wrong-password") ||
       msg.includes("auth/invalid-credential")
     ) {
-      throw new Error("Invalid email or password.");
+      throw new Error("Invalid email or password.", { cause: err });
     }
 
-    throw new Error("Unable to login. Please try again.");
+    throw new Error("Unable to login. Please try again.", { cause: err });
   }
 }
 
@@ -215,10 +215,10 @@ export async function loginMentor(email, password) {
       msg.includes("auth/wrong-password") ||
       msg.includes("auth/invalid-credential")
     ) {
-      throw new Error("Invalid email or password.");
+      throw new Error("Invalid email or password.", { cause: err });
     }
 
-    throw new Error("Unable to login. Please try again.");
+    throw new Error("Unable to login. Please try again.", { cause: err });
   }
 }
 

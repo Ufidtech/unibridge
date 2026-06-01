@@ -1,20 +1,22 @@
-import Navbar from './Navbar';
-import Hero from './Hero';
-import About from './About';
-import HowItWorks from './HowItWorks';
-import Contact from './Contact';
-import Footer from './Footer';
+import Navbar from "./Navbar";
+import Hero from "./Hero";
+import SocialProof from "./SocialProof";
+import About from "./About";
+import HowItWorks from "./HowItWorks";
+import Contact from "./Contact";
+import Footer from "./Footer";
 
 export default function LandingPage({ onNavigate }) {
   return (
     <div className="min-h-screen bg-slate-950 scroll-smooth">
       <Navbar onNavigate={onNavigate} />
       <div id="hero">
-        <Hero 
-          onFindMentor={() => onNavigate('/onboarding')} 
-          onBecomeMentor={() => onNavigate('/mentor-onboarding')} 
+        <Hero
+          onFindMentor={() => onNavigate("/onboarding")}
+          onBecomeMentor={() => onNavigate("/mentor-onboarding")}
         />
       </div>
+      <SocialProof />
       <div id="about">
         <About />
       </div>

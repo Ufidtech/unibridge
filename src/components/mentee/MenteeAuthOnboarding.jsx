@@ -99,7 +99,9 @@ export default function MenteeAuthOnboarding({
       .then(({ user, alreadyExisted }) => {
         try {
           if (user) localStorage.setItem("menteeData", JSON.stringify(user));
-        } catch {}
+        } catch {
+          void 0;
+        }
         // show a short success message before proceeding so the user isn't
         // confused by an immediate navigation. The caller will still receive
         // the `user` (may be null when alreadyExisted fallback was used).

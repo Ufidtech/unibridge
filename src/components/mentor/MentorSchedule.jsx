@@ -1,4 +1,4 @@
-import React from "react";
+// React import not required in modern JSX runtimes
 import UpcomingSession from "./UpcomingSession";
 
 export default function MentorSchedule({

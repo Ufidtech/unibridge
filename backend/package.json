@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-  "test": "vitest run",
+    "test": "vitest run",
     "db:seed": "node scripts/seedFirebase.js"
   },
   "dependencies": {
@@ -15,16 +15,16 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
-    "firebase-admin": "^13.9.0",
-    "googleapis": "^118.0.0",
+    "firebase-admin": "^10.3.0",
+    "googleapis": "^172.0.0",
     "luxon": "^3.7.2",
-    "nodemailer": "^6.9.3",
+    "nodemailer": "^8.0.9",
     "zod": "^4.0.17"
   },
   "devDependencies": {
-    "firebase-tools": "^14.10.0",
+    "firebase-tools": "^1.2.0",
     "nodemon": "^3.1.10",
     "supertest": "^6.3.4",
-    "vitest": "^1.0.0"
+    "vitest": "^4.1.7"
   }
 }

@@ -120,45 +120,33 @@ export default function MentorDashboard({
     }
   };
 
-  const handleProposalResponse = async (
-    proposal,
-    status
-  ) => {
+  const handleProposalResponse = async (proposal, status) => {
     // Optimistically update proposalsList for instant UI feedback
     setProposalsList((prev) =>
       prev.map((p) =>
         p.id === proposal.id && p.sessionId === proposal.sessionId
           ? { ...p, status }
-          : p
-      )
+          : p,
+      ),
     );
     try {
-      await respondToProposal(
-        proposal.sessionId,
-        proposal.id,
-        status
-      );
+      await respondToProposal(proposal.sessionId, proposal.id, status);
 
       toast.success(
-        status === "ACCEPTED"
-          ? "Proposal accepted"
-          : "Proposal declined"
+        status === "ACCEPTED" ? "Proposal accepted" : "Proposal declined",
       );
 
       // Reload fresh data from backend to ensure sync
       await loadSessions();
     } catch (err) {
-      toast.error(
-        err.message ||
-        "Failed to process proposal"
-      );
+      toast.error(err.message || "Failed to process proposal");
       // Optionally revert optimistic update on error
       setProposalsList((prev) =>
         prev.map((p) =>
           p.id === proposal.id && p.sessionId === proposal.sessionId
             ? { ...p, status: proposal.status || "PENDING" }
-            : p
-        )
+            : p,
+        ),
       );
     }
   };
@@ -196,7 +184,7 @@ export default function MentorDashboard({
           sessionTopic: s.topic,
           menteeName: s.mentee?.name || "Student",
           status: p.status,
-        }))
+        })),
       );
 
       setProposalsList(proposals);
@@ -245,8 +233,8 @@ export default function MentorDashboard({
           mentorInfo?.id,
         );
         setComputedRating(cr);
-      } catch (e) {
-        // ignore
+      } catch {
+        void 0;
       }
     } catch (err) {
       setSessionsError(String(err.message || err));
@@ -513,13 +501,17 @@ export default function MentorDashboard({
                           {/* Action buttons (We know these are always pending now) */}
                           <div className="flex flex-col gap-2 shrink-0 ml-4">
                             <button
-                              onClick={() => handleAcceptProposal(p)}
+                              onClick={() =>
+                                handleProposalResponse(p, "ACCEPTED")
+                              }
                               className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded transition cursor-pointer"
                             >
                               Accept
                             </button>
                             <button
-                              onClick={() => handleDeclineProposal(p)}
+                              onClick={() =>
+                                handleProposalResponse(p, "DECLINED")
+                              }
                               className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition cursor-pointer"
                             >
                               Decline
@@ -569,13 +561,11 @@ export default function MentorDashboard({
           )}
 
           {activeTab === "proposals" && (
-  <MentorProposals
-    proposalsList={proposalsList}
-    handleProposalResponse={
-      handleProposalResponse
-    }
-  />
-)}
+            <MentorProposals
+              proposalsList={proposalsList}
+              handleProposalResponse={handleProposalResponse}
+            />
+          )}
 
           {activeTab === "history" && (
             <MentorHistory

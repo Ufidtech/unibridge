@@ -55,7 +55,8 @@ async function apiRequest(path, options = {}) {
     console.error(`🔥 Network/API Failure → ${path}`, error);
 
     throw new Error(
-      error?.message || "Something went wrong. Please try again."
+      error?.message || "Something went wrong. Please try again.",
+      { cause: error }
     );
   }
 }

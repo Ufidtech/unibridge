@@ -11,7 +11,7 @@ async function req(path, method = 'GET', body = null, token = null) {
   });
   const text = await res.text();
   let json;
-  try { json = JSON.parse(text); } catch (e) { json = text; }
+  try { json = JSON.parse(text); } catch { json = text; }
   return { status: res.status, body: json };
 }
 

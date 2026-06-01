@@ -1,13 +1,13 @@
-import React from 'react';
-import PendingRequest from './PendingRequest';
-import EmailPreviewPanel from '../EmailPreviewPanel';
+// React import not required in modern JSX runtimes
+import PendingRequest from "./PendingRequest";
+import EmailPreviewPanel from "../EmailPreviewPanel";
 
 export default function MentorRequests({
   pendingRequests,
   loadingSessions,
   sessionsError,
   onAcceptRequest,
-  onDeclineRequest
+  onDeclineRequest,
 }) {
   return (
     <div>
@@ -20,8 +20,10 @@ export default function MentorRequests({
             </span>
           )}
         </h2>
-        
-        {loadingSessions && <p className="text-slate-400">Loading session requests...</p>}
+
+        {loadingSessions && (
+          <p className="text-slate-400">Loading session requests...</p>
+        )}
         {sessionsError && <p className="text-red-400">{sessionsError}</p>}
 
         {pendingRequests.length > 0 ? (
@@ -46,7 +48,9 @@ export default function MentorRequests({
 
       {/* Dev: Email Preview Panel */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold text-slate-100 mb-4">✉️ Email Previews (dev)</h2>
+        <h2 className="text-2xl font-bold text-slate-100 mb-4">
+          ✉️ Email Previews (dev)
+        </h2>
         <EmailPreviewPanel />
       </div>
     </div>

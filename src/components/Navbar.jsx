@@ -18,6 +18,7 @@ export default function Navbar({ onNavigate = () => {} }) {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <button
+            type="button"
             onClick={handleLogoClick}
             className="flex-shrink-0 hover:opacity-80 transition cursor-pointer"
           >
@@ -51,6 +52,7 @@ export default function Navbar({ onNavigate = () => {} }) {
           {/* Sign In Button (Desktop) */}
           <div className="hidden md:block">
             <button
+              type="button"
               onClick={() => onNavigate("login")}
               className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg transition cursor-pointer"
             >
@@ -61,7 +63,10 @@ export default function Navbar({ onNavigate = () => {} }) {
           {/* Mobile Hamburger Menu Button */}
           <div className="md:hidden">
             <button
+              type="button"
               onClick={toggleMenu}
+              aria-label="Toggle menu"
+              aria-expanded={isOpen}
               className="text-slate-300 hover:text-slate-100 focus:outline-none cursor-pointer"
             >
               <svg
@@ -105,6 +110,7 @@ export default function Navbar({ onNavigate = () => {} }) {
               Contact
             </a>
             <button
+              type="button"
               onClick={() => {
                 onNavigate("login");
                 setIsOpen(false);

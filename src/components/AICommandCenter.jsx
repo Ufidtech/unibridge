@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 // We'll call the backend AI endpoint which will either use Gemini or the local fallback
 async function askAssistant(prompt) {
-  const res = await fetch('/api/ai/mentor-response', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/ai/mentor-response", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt }),
   });
   const json = await res.json();
@@ -12,16 +13,17 @@ async function askAssistant(prompt) {
 }
 
 export default function AICommandCenter({ userInfo = null }) {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState([
     {
-      role: 'ai',
+      role: "ai",
       text: userInfo?.menteeProfile?.school
-        ? `Hi ${userInfo.name}! 👋 I'm your AI mentor assistant. Tell me your goals (e.g., "Prepare for ${userInfo.menteeProfile.dreamCourse || 'JAMB'}") and I'll help match you with the right mentor.`
+        ? `Hi ${userInfo.name}! 👋 I'm your AI mentor assistant. Tell me your goals (e.g., "Prepare for ${userInfo.menteeProfile.dreamCourse || "JAMB"}") and I'll help match you with the right mentor.`
         : 'Hi! 👋 I\'m your AI mentor assistant. Ask me anything to help refine what you\'re looking for in a mentor. For example: "What skills do I need for Computer Science?" or "Help me prepare for JAMB".',
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [recommendationsUpdated, setRecommendationsUpdated] = useState(false);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) {
@@ -29,35 +31,90 @@ export default function AICommandCenter({ userInfo = null }) {
     }
 
     const userMessage = input.trim();
-    setMessages((prev) => [...prev, { role: 'user', text: userMessage }]);
-    setInput('');
+    setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
+    setInput("");
     setIsLoading(true);
 
-  const aiReply = await askAssistant(userMessage);
+    const aiReply = await askAssistant(userMessage);
+    setMessages((prev) => [...prev, { role: "ai", text: aiReply }]);
 
-  setMessages((prev) => [...prev, { role: 'ai', text: aiReply }]);
+    // Attempt to fetch AI-driven mentor recommendations directly
+    try {
+      if (userInfo?.id) {
+        const resp = await fetch("/api/ai/recommend-mentors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ menteeId: userInfo.id, limit: 12 }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const list = Array.isArray(data.mentors) ? data.mentors : [];
+          // Dispatch a custom event with the mentors so the dashboard can update without re-fetching
+          try {
+            window.dispatchEvent(
+              new CustomEvent("ai:recommend:done", {
+                detail: { mentors: list },
+              }),
+            );
+          } catch {
+            void 0;
+          }
+
+          // Show a short-lived UI indicator in the command center
+          setRecommendationsUpdated(true);
+          setTimeout(() => setRecommendationsUpdated(false), 3000);
+        } else {
+          // still signal that AI was used; dashboard may choose to refetch
+          window.dispatchEvent(new Event("ai:recommend"));
+        }
+      } else {
+        // no mentee id — still notify listeners
+        window.dispatchEvent(new Event("ai:recommend"));
+      }
+    } catch {
+      console.warn("Recommendation fetch failed");
+      try {
+        window.dispatchEvent(new Event("ai:recommend"));
+      } catch {
+        void 0;
+      }
+    }
     setIsLoading(false);
   };
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8">
-      <h3 className="text-lg font-bold text-slate-100 mb-4">AI Command Center</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-slate-100">AI Command Center</h3>
+        {recommendationsUpdated && (
+          <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-md">
+            Recommendations refreshed
+          </span>
+        )}
+      </div>
 
       {/* Chat Messages */}
       <div className="bg-slate-950 rounded-lg p-4 mb-4 h-64 overflow-y-auto space-y-4">
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
               className={`max-w-xs px-4 py-2 rounded-lg ${
-                msg.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-200'
+                msg.role === "user"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-800 text-slate-200"
               }`}
             >
-              <p className="text-sm">{msg.text}</p>
+              {msg.role === "ai" ? (
+                <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-headings:mt-0 prose-headings:mb-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0">
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+              )}
             </div>
           </div>
         ))}
@@ -69,7 +126,7 @@ export default function AICommandCenter({ userInfo = null }) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="e.g., What skills do I need for Computer Science?"
           className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
         />
@@ -78,12 +135,13 @@ export default function AICommandCenter({ userInfo = null }) {
           disabled={isLoading}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition"
         >
-          {isLoading ? 'Thinking...' : 'Send'}
+          {isLoading ? "Thinking..." : "Send"}
         </button>
       </div>
 
       <p className="text-xs text-slate-400 mt-2">
-        💡 Tip: Tell me about your goals and I'll help match you with the perfect mentor!
+        💡 Tip: Tell me about your goals and I'll help match you with the
+        perfect mentor!
       </p>
     </div>
   );

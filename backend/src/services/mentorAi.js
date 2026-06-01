@@ -4,6 +4,7 @@ import { firestore } from '../lib/firebase.js';
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 function buildPrompt(userPrompt) {
   return `
@@ -38,12 +39,14 @@ export async function generateMentorResponse(userPrompt) {
     return fallbackReply(userPrompt);
   }
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
   try {
     const result = await safeGenerate(model, buildPrompt(userPrompt.trim()));
     return result.response.text();
-  } catch (err) {
-    console.error('Generative AI failed, falling back:', err && err.message ? err.message : err);
+  } catch (error) {
+    console.error('RAW GOOGLE ERROR:', error);
+    console.error('RAW GOOGLE ERROR MESSAGE:', error?.message);
+    console.error('RAW GOOGLE ERROR STATUS:', error?.status || error?.response?.status);
     return fallbackReply(userPrompt);
   }
 }
@@ -56,17 +59,19 @@ async function safeGenerate(model, prompt, maxAttempts = 3) {
       attempt += 1;
       const res = await model.generateContent(prompt);
       return res;
-    } catch (err) {
-      const msg = String(err && (err.message || err));
+    } catch (error) {
+      const msg = String(error && (error.message || error));
       // detect quota/429
       const is429 = /429|Too Many Requests|quota/i.test(msg);
       const retrySeconds = parseRetrySeconds(msg);
       const remaining = Math.max(0, maxAttempts - attempt);
       if (!is429 || attempt >= maxAttempts) {
-        // include remaining info in thrown error for visibility
-        const e = new Error((err && err.message) || String(err));
-        e.remainingRetries = remaining;
-        throw e;
+        // keep the original Google error intact so the caller can inspect it
+        if (error && typeof error === 'object') {
+          error.remainingRetries = remaining;
+        }
+        console.error('RAW GOOGLE ERROR (safeGenerate final):', error);
+        throw error;
       }
       // wait for specified retry delay if present, otherwise exponential backoff (seconds)
       const waitMs = (typeof retrySeconds === 'number' && !Number.isNaN(retrySeconds)) ? Math.ceil(retrySeconds * 1000) : Math.min(2000 * attempt, 8000);
@@ -103,131 +108,131 @@ function parseRetrySeconds(msg) {
 }
 
 // Improved NLP-based ranking for recommending mentors
-  export async function recommendMentors(menteeId, { limit = 5 } = {}) {
-    if (!menteeId) throw new Error('menteeId is required');
+export async function recommendMentors(menteeId, { limit = 5 } = {}) {
+  if (!menteeId) throw new Error('menteeId is required');
 
-    const menteeDoc = await firestore.collection('menteeProfiles').doc(menteeId).get();
-    const mentee = menteeDoc.exists ? menteeDoc.data() : {};
+  const menteeDoc = await firestore.collection('menteeProfiles').doc(menteeId).get();
+  const mentee = menteeDoc.exists ? menteeDoc.data() : {};
 
-    // Helpers
-    function toTokens(input) {
-      if (!input) return new Set();
-      return new Set(
-        String(input)
-          .toLowerCase()
-          .split(/[^a-z0-9]+/)
-          .filter((t) => t.length > 1),
-      );
-    }
+  // Helpers
+  function toTokens(input) {
+    if (!input) return new Set();
+    return new Set(
+      String(input)
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((t) => t.length > 1),
+    );
+  }
 
-    function jaccard(aSet, bSet) {
-      const a = Array.from(aSet);
-      const b = new Set(bSet);
-      const inter = a.filter((x) => b.has(x)).length;
-      const union = new Set([...a, ...Array.from(bSet)]).size;
-      return union === 0 ? 0 : inter / union;
-    }
+  function jaccard(aSet, bSet) {
+    const a = Array.from(aSet);
+    const b = new Set(bSet);
+    const inter = a.filter((x) => b.has(x)).length;
+    const union = new Set([...a, ...Array.from(bSet)]).size;
+    return union === 0 ? 0 : inter / union;
+  }
 
-    function parseResponseTime(rt) {
-      if (!rt) return null;
-      const s = String(rt).toLowerCase();
-      const m = s.match(/(\d+(?:\.\d+)?)\s*(min|mins|minute|minutes|h|hr|hrs|hour|hours|day|days)/);
-      if (!m) return null;
-      const val = parseFloat(m[1]);
-      const unit = m[2];
-      if (/min|mins|minute|minutes/.test(unit)) return val / 60; // hours
-      if (/h|hr|hrs|hour|hours/.test(unit)) return val;
-      if (/day|days/.test(unit)) return val * 24;
-      return null;
-    }
+  function parseResponseTime(rt) {
+    if (!rt) return null;
+    const s = String(rt).toLowerCase();
+    const m = s.match(/(\d+(?:\.\d+)?)\s*(min|mins|minute|minutes|h|hr|hrs|hour|hours|day|days)/);
+    if (!m) return null;
+    const val = parseFloat(m[1]);
+    const unit = m[2];
+    if (/min|mins|minute|minutes/.test(unit)) return val / 60; // hours
+    if (/h|hr|hrs|hour|hours/.test(unit)) return val;
+    if (/day|days/.test(unit)) return val * 24;
+    return null;
+  }
 
-    // Mentor candidates
-    const userSnapshot = await firestore.collection('users').where('role', '==', 'MENTOR').get();
-    const candidates = [];
+  // Mentor candidates
+  const userSnapshot = await firestore.collection('users').where('role', '==', 'MENTOR').get();
+  const candidates = [];
 
-    const menteeDreamTokens = toTokens(mentee.dreamCourse || '');
-    const menteeInterests = Array.isArray(mentee.interests) ? mentee.interests.map((s) => String(s).toLowerCase()) : [];
-    const menteeVibes = new Set(mentee.selectedVibes || []);
+  const menteeDreamTokens = toTokens(mentee.dreamCourse || '');
+  const menteeInterests = Array.isArray(mentee.interests) ? mentee.interests.map((s) => String(s).toLowerCase()) : [];
+  const menteeVibes = new Set(mentee.selectedVibes || []);
 
-    for (const userDoc of userSnapshot.docs) {
-      const profileDoc = await firestore.collection('mentorProfiles').doc(userDoc.id).get();
-      if (!profileDoc.exists) continue;
-      const profile = profileDoc.data();
+  for (const userDoc of userSnapshot.docs) {
+    const profileDoc = await firestore.collection('mentorProfiles').doc(userDoc.id).get();
+    if (!profileDoc.exists) continue;
+    const profile = profileDoc.data();
 
-      // tokens and sets
-      const skillTokens = new Set((profile.skills || []).flatMap((s) => String(s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)));
-      const bioTokens = toTokens(profile.bio || '');
+    // tokens and sets
+    const skillTokens = new Set((profile.skills || []).flatMap((s) => String(s).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)));
+    const bioTokens = toTokens(profile.bio || '');
 
-      // measures
-      const dreamSkillJaccard = jaccard(menteeDreamTokens, skillTokens);
-      const interestSkillJaccard = jaccard(new Set(menteeInterests), skillTokens);
-      const bioMatch = jaccard(menteeDreamTokens, bioTokens);
+    // measures
+    const dreamSkillJaccard = jaccard(menteeDreamTokens, skillTokens);
+    const interestSkillJaccard = jaccard(new Set(menteeInterests), skillTokens);
+    const bioMatch = jaccard(menteeDreamTokens, bioTokens);
 
-      // vibes overlap
-      const mentorVibes = new Set(profile.selectedVibes || []);
-      let vibeMatches = 0;
-      for (const v of menteeVibes) if (mentorVibes.has(v)) vibeMatches++;
+    // vibes overlap
+    const mentorVibes = new Set(profile.selectedVibes || []);
+    let vibeMatches = 0;
+    for (const v of menteeVibes) if (mentorVibes.has(v)) vibeMatches++;
 
-      // rating and reviews
-      const rating = Number(profile.rating || 0);
-      const reviews = Number(profile.reviews || 0);
+    // rating and reviews
+    const rating = Number(profile.rating || 0);
+    const reviews = Number(profile.reviews || 0);
 
-      // availability: lower response time (hours) => higher availability score
-      const hours = parseResponseTime(profile.responseTime);
-      const availabilityScore = hours == null ? 0.5 : 1 / (1 + hours); // between ~0..1
+    // availability: lower response time (hours) => higher availability score
+    const hours = parseResponseTime(profile.responseTime);
+    const availabilityScore = hours == null ? 0.5 : 1 / (1 + hours); // between ~0..1
 
-      // Weighting scheme (tunable)
-      const weights = {
-        dreamSkill: 4.0,
-        interestSkill: 2.0,
-        bio: 1.0,
-        vibes: 1.5,
-        rating: 2.0,
-        reviews: 0.5,
-        availability: 1.5,
-      };
+    // Weighting scheme (tunable)
+    const weights = {
+      dreamSkill: 4.0,
+      interestSkill: 2.0,
+      bio: 1.0,
+      vibes: 1.5,
+      rating: 2.0,
+      reviews: 0.5,
+      availability: 1.5,
+    };
 
-      const rawScore =
-        dreamSkillJaccard * weights.dreamSkill +
-        interestSkillJaccard * weights.interestSkill +
-        bioMatch * weights.bio +
-        (vibeMatches / Math.max(1, (menteeVibes.size || 1))) * weights.vibes +
-        (rating / 5) * weights.rating +
-        Math.min(reviews / 100, 1) * weights.reviews +
-        availabilityScore * weights.availability;
+    const rawScore =
+      dreamSkillJaccard * weights.dreamSkill +
+      interestSkillJaccard * weights.interestSkill +
+      bioMatch * weights.bio +
+      (vibeMatches / Math.max(1, (menteeVibes.size || 1))) * weights.vibes +
+      (rating / 5) * weights.rating +
+      Math.min(reviews / 100, 1) * weights.reviews +
+      availabilityScore * weights.availability;
 
-      candidates.push({
-        id: userDoc.id,
-        name: userDoc.data().name,
-        email: userDoc.data().email || null,
-  university: profile.universityName || profile.university || null,
-        level: profile.level,
-        bio: profile.bio,
-        skills: profile.skills || [],
+    candidates.push({
+      id: userDoc.id,
+      name: userDoc.data().name,
+      email: userDoc.data().email || null,
+      university: profile.universityName || profile.university || null,
+      level: profile.level,
+      bio: profile.bio,
+      skills: profile.skills || [],
+      rating,
+      reviews,
+      responseTime: profile.responseTime || null,
+      score: rawScore,
+      breakdown: {
+        dreamSkillJaccard,
+        interestSkillJaccard,
+        bioMatch,
+        vibeMatches,
         rating,
         reviews,
-        responseTime: profile.responseTime || null,
-        score: rawScore,
-        breakdown: {
-          dreamSkillJaccard,
-          interestSkillJaccard,
-          bioMatch,
-          vibeMatches,
-          rating,
-          reviews,
-          availabilityScore,
-        },
-      });
-    }
-
-    // normalize scores to 0..1 for presentation
-    const maxScore = candidates.reduce((m, c) => Math.max(m, c.score), 0) || 1;
-    candidates.forEach((c) => {
-      c.score = Math.round((c.score / maxScore) * 1000) / 1000; // 3 decimals
+        availabilityScore,
+      },
     });
+  }
 
-    candidates.sort((a, b) => b.score - a.score || b.rating - a.rating);
-    return candidates.slice(0, limit);
+  // normalize scores to 0..1 for presentation
+  const maxScore = candidates.reduce((m, c) => Math.max(m, c.score), 0) || 1;
+  candidates.forEach((c) => {
+    c.score = Math.round((c.score / maxScore) * 1000) / 1000; // 3 decimals
+  });
+
+  candidates.sort((a, b) => b.score - a.score || b.rating - a.rating);
+  return candidates.slice(0, limit);
 }
 
 // Generate a mentor response for a booked session. If a sessionId is provided we
@@ -252,13 +257,60 @@ export async function generateMentorResponseForSession({ sessionId, prompt }) {
     return `### Session confirmation\n\nHello ${session.mentee.name},\n\nThanks for booking a session with ${session.mentor.name} on ${session.sessionDate} at ${session.sessionTime}. ${session.mentor.name} suggests you prepare by: \n\n- Bringing specific questions about ${session.topic}.\n- Sharing any past projects or results to discuss.\n\nSee you then!`;
   }
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
   try {
     const result = await safeGenerate(model, buildPrompt(composedPrompt));
     return result.response.text();
-  } catch (err) {
-    console.error('Generative AI for session failed, falling back:', err && err.message ? err.message : err);
+  } catch (error) {
+    console.error('RAW GOOGLE ERROR:', error);
+    console.error('RAW GOOGLE ERROR MESSAGE:', error?.message);
+    console.error('RAW GOOGLE ERROR STATUS:', error?.status || error?.response?.status);
     if (!session) return fallbackReply(prompt || 'Hello');
     return `### Session confirmation\n\nHello ${session.mentee.name},\n\nThanks for booking a session with ${session.mentor.name} on ${session.sessionDate} at ${session.sessionTime}. ${session.mentor.name} suggests you prepare by: \n\n- Bringing specific questions about ${session.topic}.\n- Sharing any past projects or results to discuss.\n\nSee you then!`;
+  }
+}
+
+
+export async function generateMenteePrepSheet(studentInput) {
+  const buildFallbackPrepSheet = (input) => `### Mentee Profile
+
+Student wants support with: ${input}
+
+### Core Anxiety
+
+They likely need clarity, structure, and confidence around their next academic or career step.
+
+### The 3-Point Agenda
+
+- Clarify the student's main goal and current situation.
+- Identify the most important next steps for the mentor to explain.
+- Leave with a short action plan the student can follow this week.
+`;
+
+  if (!genAI) return buildFallbackPrepSheet(studentInput);
+
+  // The Unibridge Intake Agent System Prompt
+  const systemPrompt = `
+You are the Unibridge Intake Agent, an empathetic but highly structured AI assistant for secondary school students in Nigeria. 
+
+Your Goal: A student will provide a vague, unstructured anxiety or goal about entering university (e.g., JAMB, Post-UTME, or tech skills). You must translate their raw thoughts into a professional, highly structured "Mentor Prep Sheet" for a University Undergraduate mentor.
+
+Output format: Return STRICTLY formatted Markdown with the following sections:
+- **Mentee Profile:** (A one-sentence summary of who they are and what they want).
+- **Core Anxiety:** (What is actually stressing them out).
+- **The 3-Point Agenda:** (Exactly 3 actionable, focused questions or topics the mentor should cover in their 30-minute call).
+
+Tone: Professional, clear, and highly respectful of the mentor's time.
+
+STUDENT INPUT: "${studentInput}"
+  `;
+
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  try {
+    const result = await model.generateContent(systemPrompt);
+    return result.response.text();
+  } catch (error) {
+    console.error('Prep Sheet Gen Error (fallback):', error);
+    return buildFallbackPrepSheet(studentInput);
   }
 }

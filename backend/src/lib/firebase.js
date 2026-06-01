@@ -62,7 +62,6 @@ let firebaseAuth = null;
 let firestore = null;
 
 if (realApp) {
-  const app = admin.app();
   firebaseAdmin = admin;
   firebaseAuth = admin.auth();
   firestore = admin.firestore();
@@ -122,24 +121,48 @@ if (realApp) {
           store.set(id, { ...data, createdAt: data.createdAt ?? now });
           return { id };
         },
+        // Return a query-like object that supports chained where() calls and orderBy().get()
         where(field, op, value) {
-          // only support '==' for our needs
-          const all = Array.from(store.entries()).map(([id, data]) => ({ id, data }));
-          const filtered = all.filter((pair) => pair.data?.[field] === value);
-          return {
-            orderBy() {
+          const filters = [{ field, op, value }];
+
+          const makeQuery = (filtersArr) => ({
+            where(nextField, nextOp, nextValue) {
+              filtersArr.push({ field: nextField, op: nextOp, value: nextValue });
+              return this;
+            },
+            orderBy(orderField, orderDir) {
               return {
                 async get() {
+                  const all = Array.from(store.entries()).map(([id, data]) => ({ id, data }));
+                  const filtered = all.filter((pair) => {
+                    return filtersArr.every((f) => {
+                      if (f.op === '==') return pair.data?.[f.field] === f.value;
+                      if (f.op === '!=') return pair.data?.[f.field] !== f.value;
+                      return true;
+                    });
+                  });
+                  // naive ordering by stringified field
+                  filtered.sort((a, b) => ((a.data[orderField] || '') > (b.data[orderField] || '') ? -1 : 1));
                   const docs = filtered.map((pair) => ({ id: pair.id, data: () => pair.data }));
                   return { docs };
                 },
               };
             },
             async get() {
+              const all = Array.from(store.entries()).map(([id, data]) => ({ id, data }));
+              const filtered = all.filter((pair) => {
+                return filtersArr.every((f) => {
+                  if (f.op === '==') return pair.data?.[f.field] === f.value;
+                  if (f.op === '!=') return pair.data?.[f.field] !== f.value;
+                  return true;
+                });
+              });
               const docs = filtered.map((pair) => ({ id: pair.id, data: () => pair.data }));
               return { docs };
             },
-          };
+          });
+
+          return makeQuery(filters);
         },
         orderBy(field, dir) {
           const all = Array.from(store.entries()).map(([id, data]) => ({ id, data }));
@@ -158,6 +181,20 @@ if (realApp) {
         },
       };
     },
+    // Basic batch support for operations that call batch.set(docRef, data)
+    batch() {
+      const ops = [];
+      return {
+        set(ref, data, options) {
+          // If a docRef with set() is passed, delegate to it when committing
+          ops.push(() => ref.set(data, options));
+        },
+        async commit() {
+          const results = await Promise.all(ops.map((fn) => fn()));
+          return results;
+        },
+      };
+    },
   };
 
   const mockAuth = {
@@ -170,7 +207,7 @@ if (realApp) {
       err.code = 'auth/user-not-found';
       throw err;
     },
-    async createUser({ email, password, displayName }) {
+    async createUser({ email, displayName }) {
       const uid = makeId();
       const user = { uid, email, displayName };
       usersByUid.set(uid, user);
@@ -198,7 +235,7 @@ if (realApp) {
       return { uid: user.uid, email: user.email, name: user.displayName, ...claims };
     },
     // Provide createCustomToken on auth() to mirror firebase-admin API
-    async createCustomToken(uid, claims) {
+    async createCustomToken(uid) {
       return `mock:${uid}`;
     },
   };
@@ -211,7 +248,7 @@ if (realApp) {
       return mockFirestore;
     },
     // keep a createCustomToken helper similar to admin.auth().createCustomToken
-    async createCustomToken(uid, claims) {
+    async createCustomToken(uid) {
       return `mock:${uid}`;
     },
   };

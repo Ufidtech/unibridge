@@ -1,43 +1,85 @@
-import { useState } from 'react';
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
-export default function SuccessModal({ sessionDetails = {
-  mentorName: 'Umar Farooq',
-  date: '2026-05-15',
-  time: '2:00 PM',
-  meetLink: 'https://meet.google.com/abc-defg-hij',
-}, onClose = () => {} }) {
+export default function SuccessModal({
+  sessionDetails = {
+    mentorName: "Umar Farooq",
+    date: "2026-05-15",
+    time: "2:00 PM",
+    meetLink: "https://meet.google.com/abc-defg-hij",
+    aiPrepSheet: "", // Add this to your default props
+  },
+  onClose = () => {},
+}) {
   const [copiedLink, setCopiedLink] = useState(false);
-  const [checklist, setChecklist] = useState([
-    { id: 1, text: 'Review the AI pre-screened questions', completed: false },
-    { id: 2, text: 'Prepare your notes and questions', completed: false },
-    { id: 3, text: 'Test your internet connection', completed: false },
-  ]);
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(sessionDetails.meetLink);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  // Initialize checklist from sessionDetails.aiPrepSheet when component mounts
+  const [checklist, setChecklist] = useState(() => {
+    try {
+      const md = sessionDetails.aiPrepSheet || "";
+      const lines = md
+        .split("\n")
+        .filter(
+          (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
+        );
+      if (lines.length > 0) {
+        return lines.map((line, index) => ({
+          id: index + 1,
+          text: line
+            .replace(/^[-*]\s*/, "")
+            .replace(/\*\*/g, "")
+            .trim(),
+          completed: false,
+        }));
+      }
+    } catch {
+      // fallthrough to default
+    }
+    return [
+      { id: 1, text: "Prepare your notes and questions", completed: false },
+      { id: 2, text: "Test your internet connection", completed: false },
+    ];
+  });
+
+  // Formatted display for the date (fallback to raw string)
+  const formattedDate = (() => {
+    try {
+      if (!sessionDetails?.date) return "";
+      const d = new Date(sessionDetails.date);
+      if (Number.isNaN(d.getTime())) return sessionDetails.date;
+      return d.toLocaleDateString();
+    } catch {
+      return sessionDetails.date || "";
+    }
+  })();
+
+  // Copy meet link to clipboard
+  const handleCopyLink = async () => {
+    try {
+      if (navigator?.clipboard && sessionDetails?.meetLink) {
+        await navigator.clipboard.writeText(sessionDetails.meetLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 3000);
+      }
+    } catch (e) {
+      console.error("Copy failed", e);
+    }
   };
 
+  // Toggle a checklist item
   const toggleChecklistItem = (id) => {
-    setChecklist(
-      checklist.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
+    setChecklist((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, completed: !it.completed } : it,
+      ),
     );
   };
-
-  const formattedDate = new Date(sessionDetails.date).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full overflow-hidden">
         {/* Success Header */}
-        <div className="bg-gradient-to-r from-green-500/20 to-green-500/10 border-b border-green-500/30 p-6 text-center">
+        <div className="bg-linear-to-r from-green-500/20 to-green-500/10 border-b border-green-500/30 p-6 text-center">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
               <svg
@@ -71,15 +113,21 @@ export default function SuccessModal({ sessionDetails = {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-400">Date:</span>
-                <span className="text-slate-100 font-medium">{formattedDate}</span>
+                <span className="text-slate-100 font-medium">
+                  {formattedDate}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Time:</span>
-                <span className="text-slate-100 font-medium">{sessionDetails.time}</span>
+                <span className="text-slate-100 font-medium">
+                  {sessionDetails.time}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Mentor:</span>
-                <span className="text-slate-100 font-medium">{sessionDetails.mentorName}</span>
+                <span className="text-slate-100 font-medium">
+                  {sessionDetails.mentorName}
+                </span>
               </div>
             </div>
           </div>
@@ -100,11 +148,11 @@ export default function SuccessModal({ sessionDetails = {
                 onClick={handleCopyLink}
                 className={`px-3 py-2 rounded-lg font-medium transition text-sm cursor-pointer ${
                   copiedLink
-                    ? 'bg-green-600 text-white'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                    ? "bg-green-600 text-white"
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
                 }`}
               >
-                {copiedLink ? '✓ Copied' : 'Copy'}
+                {copiedLink ? "✓ Copied" : "Copy"}
               </button>
             </div>
           </div>
@@ -122,10 +170,10 @@ export default function SuccessModal({ sessionDetails = {
                   className="w-full flex items-center gap-3 p-3 bg-slate-800/50 hover:bg-slate-800 rounded-lg transition text-left group cursor-pointer"
                 >
                   <div
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition ${
                       item.completed
-                        ? 'bg-green-500 border-green-500'
-                        : 'border-slate-600 group-hover:border-slate-500'
+                        ? "bg-green-500 border-green-500"
+                        : "border-slate-600 group-hover:border-slate-500"
                     }`}
                   >
                     {item.completed && (
@@ -145,8 +193,8 @@ export default function SuccessModal({ sessionDetails = {
                   <span
                     className={`text-sm ${
                       item.completed
-                        ? 'text-slate-400 line-through'
-                        : 'text-slate-300'
+                        ? "text-slate-400 line-through"
+                        : "text-slate-300"
                     }`}
                   >
                     {item.text}
@@ -154,6 +202,16 @@ export default function SuccessModal({ sessionDetails = {
                 </button>
               ))}
             </div>
+            {sessionDetails.aiPrepSheet && (
+              <div className="mt-4 bg-slate-800/40 border border-slate-700 rounded-lg p-3">
+                <div className="text-slate-300 text-sm font-medium mb-2">
+                  Full prep notes
+                </div>
+                <div className="prose prose-invert prose-sm max-w-none">
+                  <ReactMarkdown>{sessionDetails.aiPrepSheet}</ReactMarkdown>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

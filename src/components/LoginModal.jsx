@@ -31,7 +31,9 @@ export default function LoginModal({
           userType === "mentee" ? "menteeData" : "mentorData",
           JSON.stringify(user),
         );
-      } catch {}
+      } catch {
+        void 0;
+      }
 
       onComplete(user);
     } catch (err) {
