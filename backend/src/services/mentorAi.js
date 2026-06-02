@@ -272,22 +272,7 @@ export async function generateMentorResponseForSession({ sessionId, prompt }) {
 
 
 export async function generateMenteePrepSheet(studentInput) {
-  const buildFallbackPrepSheet = (input) => `### Mentee Profile
-
-Student wants support with: ${input}
-
-### Core Anxiety
-
-They likely need clarity, structure, and confidence around their next academic or career step.
-
-### The 3-Point Agenda
-
-- Clarify the student's main goal and current situation.
-- Identify the most important next steps for the mentor to explain.
-- Leave with a short action plan the student can follow this week.
-`;
-
-  if (!genAI) return buildFallbackPrepSheet(studentInput);
+  if (!genAI) throw new Error("Gemini API key is missing");
 
   // The Unibridge Intake Agent System Prompt
   const systemPrompt = `
@@ -306,11 +291,6 @@ STUDENT INPUT: "${studentInput}"
   `;
 
   const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-  try {
-    const result = await model.generateContent(systemPrompt);
-    return result.response.text();
-  } catch (error) {
-    console.error('Prep Sheet Gen Error (fallback):', error);
-    return buildFallbackPrepSheet(studentInput);
-  }
+  const result = await model.generateContent(systemPrompt);
+  return result.response.text();
 }

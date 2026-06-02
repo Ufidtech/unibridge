@@ -4,16 +4,16 @@ export default function SocialProof() {
   return (
     <section className="bg-slate-900 py-6">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div className="text-sm text-slate-400">
             Mentors from top universities
           </div>
 
-          <div className="flex items-center gap-6 overflow-hidden">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 overflow-hidden">
             {schools.map((school) => (
               <div
                 key={school}
-                className="flex items-center gap-2 text-slate-300 opacity-80 transition transform hover:scale-105 hover:opacity-100"
+                className="flex items-center gap-2 text-slate-300 opacity-80 transition transform hover:scale-105 hover:opacity-100 min-w-0"
               >
                 <svg
                   width="36"
@@ -26,7 +26,7 @@ export default function SocialProof() {
                 >
                   <rect width="36" height="24" rx="3" fill="#cbd5e1" />
                 </svg>
-                <div className="text-sm text-slate-400">{school}</div>
+                <div className="text-sm text-slate-400 truncate">{school}</div>
               </div>
             ))}
           </div>

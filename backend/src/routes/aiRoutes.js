@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { recommendMentors, generateMentorResponseForSession, generateMenteePrepSheet } from '../services/mentorAi.js';
+import { generateMentorResponse, recommendMentors, generateMentorResponseForSession, generateMenteePrepSheet } from '../services/mentorAi.js';
 
 const router = Router();
 
-router.post('/mentor-response', async (req, res) => {
+router.post('/mentor-response', async (req, res, next) => {
   try {
     const { prompt, sessionId } = req.body ?? {};
 
@@ -49,7 +49,7 @@ router.post('/recommend-mentors', async (req, res, next) => {
   }
 });
 
-router.post('/generate-prep-sheet', async (req, res) => {
+router.post('/generate-prep-sheet', async (req, res, next) => {
   try {
     const { studentInput } = req.body ?? {};
 

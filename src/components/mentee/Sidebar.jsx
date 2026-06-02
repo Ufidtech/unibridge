@@ -14,25 +14,44 @@ export default function Sidebar({
   };
 
   const handleLogout = async () => {
-  try {
-    console.log("🚪 Starting logout...");
+    try {
+      console.log("🚪 Starting logout...");
 
-    await logout();
+      await logout();
 
-    console.log("✅ Logout successful");
-  } catch (err) {
-    console.warn("⚠️ Logout failed (ignored):", err);
-  }
+      console.log("✅ Logout successful");
+    } catch (err) {
+      console.warn("⚠️ Logout failed (ignored):", err);
+    }
 
-  setIsOpen(false);
+    setIsOpen(false);
 
-  // Hard refresh to fully reset Firebase auth state
-  window.location.href = "/";
-};
+    // Hard refresh to fully reset Firebase auth state
+    window.location.href = "/";
+  };
 
   const navLinks = [
     { label: "Dashboard", icon: "📊", path: "/mentee-dashboard" },
-    { label: "My Sessions", icon: "📅", path: "/mentee-dashboard?tab=sessions" },
+    {
+      label: "Group Sessions",
+      icon: "🎥",
+      path: "/mentee-dashboard?tab=sessions",
+    },
+    {
+      label: "Schedule",
+      icon: "📅",
+      path: "/mentee-dashboard?tab=schedule",
+    },
+    {
+      label: "Proposals",
+      icon: "🔁",
+      path: "/mentee-dashboard?tab=proposals",
+    },
+    {
+      label: "Requests",
+      icon: "📨",
+      path: "/mentee-dashboard?tab=requests",
+    },
     { label: "Profile", icon: "👤", path: "/mentee-dashboard?tab=profile" },
   ];
 
@@ -41,7 +60,7 @@ export default function Sidebar({
       {/* Mobile Hamburger Button */}
       <button
         onClick={toggleMenu}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition transform translate-x-10 cursor-pointer"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition cursor-pointer"
       >
         <svg
           className="w-6 h-6"
@@ -60,7 +79,7 @@ export default function Sidebar({
 
       {/* Sidebar - Desktop Always Visible, Mobile in Overlay */}
       <div
-        className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform ${
+        className={`fixed md:sticky top-0 left-0 h-screen w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform overflow-y-auto ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -78,10 +97,10 @@ export default function Sidebar({
         </div>
 
         {/* Navigation Links */}
-        <nav className="space-y-4 mb-12">
+        <nav className="space-y-3 mb-12">
           {navLinks.map((link) => {
             // consider query string when determining active link
-            const current = `${location.pathname}${location.search || ''}`;
+            const current = `${location.pathname}${location.search || ""}`;
             const isActive = current.startsWith(link.path);
             return (
               <button
@@ -90,21 +109,21 @@ export default function Sidebar({
                   onNavigate(link.path);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left cursor-pointer min-w-0 ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                 }`}
               >
                 <span className="text-xl">{link.icon}</span>
-                <span className="font-medium">{link.label}</span>
+                <span className="font-medium truncate">{link.label}</span>
               </button>
             );
           })}
         </nav>
 
         {/* User Info - Bottom */}
-        <div className="absolute bottom-6 left-6 right-6 space-y-4">
+        <div className="md:absolute md:bottom-6 left-6 right-6 space-y-4 mt-8 md:mt-0 pb-4 md:pb-0">
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mb-3">
               {userInfo.name.charAt(0)}

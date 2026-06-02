@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
-import ReactMarkdown from "react-markdown";
 import "react-datepicker/dist/react-datepicker.css";
+import { generatePrepSheet } from "../../lib/api/ai";
+import { isValidTimeZone, toISODateTime } from "../../lib/session";
 
 export default function BookSessionModal({
   mentor = {
@@ -18,40 +19,16 @@ export default function BookSessionModal({
   confirmLabel = "Confirm Booking",
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedDateTime, setSelectedDateTime] = useState(() => {
-    try {
-      if (initialDate && initialTime) {
-        const dt = new Date(
-          initialDate +
-            "T" +
-            (initialTime.length === 5 ? initialTime + ":00" : initialTime),
-        );
-        return isNaN(dt.getTime()) ? null : dt;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  });
+  const [selectedDateTime, setSelectedDateTime] = useState(null);
   const [goal, setGoal] = useState("");
-  const [timezone, setTimezone] = useState(() => {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-    } catch {
-      return "UTC";
-    }
-  });
-  const [aiPrepSheet, setAiPrepSheet] = useState("");
-  const [isPrepReady, setIsPrepReady] = useState(false);
+  const [timezone, setTimezone] = useState("");
+  const [error, setError] = useState("");
   const [aiQuestions] = useState([
     "What specific areas of React do you want to master?",
     "What challenges are you facing with your JAMB prep?",
   ]);
 
-  // timeSlots/dateOptions removed (not used) to satisfy linting
-
-  // keep selectedDateTime/timezone in sync if props change
+  // initialize with provided values (for reschedule flows)
   useEffect(() => {
     if (initialDate && initialTime) {
       try {
@@ -60,66 +37,62 @@ export default function BookSessionModal({
             "T" +
             (initialTime.length === 5 ? initialTime + ":00" : initialTime),
         );
-        if (!isNaN(dt.getTime())) setSelectedDateTime(dt);
-      } catch {
+        setSelectedDateTime(Number.isNaN(dt.getTime()) ? null : dt);
+      } catch (e) {
         setSelectedDateTime(null);
       }
     }
+    // detect browser timezone
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      setTimezone(tz);
+    } catch (e) {
+      setTimezone("UTC");
+    }
   }, [initialDate, initialTime]);
 
-  const canConfirm = selectedDateTime && goal.trim();
+  const canConfirm =
+    selectedDateTime && goal.trim() && isValidTimeZone(timezone);
 
-  const handleGeneratePrepSheet = async () => {
-    if (canConfirm) {
-      setIsGenerating(true);
-
-      try {
-        // Send the student's goal to the AI route and keep the prep sheet for preview.
-        const res = await fetch("/api/ai/generate-prep-sheet", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ studentInput: goal.trim() }),
-        });
-
-        const data = await res.json();
-        const prepSheet = data.prepSheet || "";
-
-        setAiPrepSheet(prepSheet);
-        setIsPrepReady(true);
-      } catch (error) {
-        console.error("AI Generation failed:", error);
-        setAiPrepSheet("");
-        setIsPrepReady(true);
-      } finally {
-        setIsGenerating(false);
-      }
+  const handleConfirm = async () => {
+    if (!canConfirm) {
+      setError("Please choose a valid date, time, and timezone.");
+      return;
     }
-  };
 
-  const handleConfirmBooking = async () => {
-    if (!canConfirm || isSubmitting) return;
+    setIsGenerating(true);
+    setError("");
 
-    setIsSubmitting(true);
     try {
+      const sessionDate = selectedDateTime.toISOString().split("T")[0];
+      const sessionTime = selectedDateTime.toTimeString().slice(0, 5);
+      const datetime = toISODateTime({ sessionDate, sessionTime, timezone });
+
+      if (!datetime) {
+        throw new Error(
+          "Selected time cannot be represented in the chosen timezone.",
+        );
+      }
+
+      const data = await generatePrepSheet(goal.trim());
+
       onConfirm({
         mentorName: mentor.name,
-        datetime: selectedDateTime ? selectedDateTime.toISOString() : null,
+        datetime,
         timezone,
         goal,
-        aiPrepSheet: aiPrepSheet || null,
+        aiPrepSheet: data.prepSheet || null,
       });
+    } catch (error) {
+      console.error("Booking confirmation failed:", error);
+      setError(error.message || "Unable to confirm booking.");
     } finally {
-      setIsSubmitting(false);
+      setIsGenerating(false);
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="book-session-title"
-    >
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full">
         {/* Header */}
         <div className="border-b border-slate-800 p-6">
@@ -128,9 +101,7 @@ export default function BookSessionModal({
               {mentor.initials}
             </div>
             <div>
-              <h3 id="book-session-title" className="font-bold text-slate-100">
-                {mentor.name}
-              </h3>
+              <h3 className="font-bold text-slate-100">{mentor.name}</h3>
               <p className="text-xs text-slate-400">
                 {mentor.level} • {mentor.university}
               </p>
@@ -140,6 +111,11 @@ export default function BookSessionModal({
 
         {/* Content */}
         <div className="p-6 max-h-96 overflow-y-auto">
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {error}
+            </div>
+          )}
           <div className="mb-4">
             <label className="block text-slate-300 font-semibold mb-2 text-sm">
               Select Date & Time
@@ -163,43 +139,12 @@ export default function BookSessionModal({
             </label>
             <textarea
               value={goal}
-              onChange={(e) => {
-                setGoal(e.target.value);
-                setIsPrepReady(false);
-                setAiPrepSheet("");
-              }}
+              onChange={(e) => setGoal(e.target.value)}
               placeholder="e.g., Learn React hooks and manage my JAMB prep schedule"
               rows="3"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm resize-none"
             ></textarea>
           </div>
-
-          {isPrepReady && (
-            <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <p className="text-emerald-300 font-semibold text-sm">
-                  AI Prep Sheet Preview
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setIsPrepReady(false)}
-                  className="text-xs text-emerald-200 hover:text-white underline"
-                >
-                  Edit goal
-                </button>
-              </div>
-              {aiPrepSheet ? (
-                <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-headings:mt-0 prose-headings:mb-2 prose-ul:my-2 prose-li:my-0">
-                  <ReactMarkdown>{aiPrepSheet}</ReactMarkdown>
-                </div>
-              ) : (
-                <p className="text-sm text-slate-300">
-                  No detailed prep sheet was returned, but you can still confirm
-                  the booking.
-                </p>
-              )}
-            </div>
-          )}
 
           {/* AI Suggested Questions */}
           <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4 mb-4">
@@ -239,19 +184,15 @@ export default function BookSessionModal({
         {/* Footer */}
         <div className="border-t border-slate-800 p-6 flex gap-3">
           <button
-            type="button"
             onClick={onClose}
-            disabled={isGenerating || isSubmitting}
+            disabled={isGenerating}
             className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-semibold rounded-lg transition"
           >
             Cancel
           </button>
           <button
-            type="button"
-            onClick={
-              isPrepReady ? handleConfirmBooking : handleGeneratePrepSheet
-            }
-            disabled={!canConfirm || isGenerating || isSubmitting}
+            onClick={handleConfirm}
+            disabled={!canConfirm || isGenerating}
             className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition flex justify-center items-center gap-2"
           >
             {isGenerating ? (
@@ -276,14 +217,10 @@ export default function BookSessionModal({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Generating Prep Sheet...
+                Preparing Session...
               </>
-            ) : isSubmitting ? (
-              "Confirming Booking..."
-            ) : isPrepReady ? (
-              confirmLabel
             ) : (
-              "Generate Prep Sheet"
+              confirmLabel
             )}
           </button>
         </div>

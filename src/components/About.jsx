@@ -11,10 +11,10 @@ export default function About() {
         </div>
 
         {/* Main Content Grid: Text (Left) + Founder Card (Right) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-start">
           {/* Left: Mission Cards Grid */}
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {/* Card 1 */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:shadow-2xl hover:border-blue-500 transition-transform transform hover:-translate-y-1">
                 <div className="flex items-center justify-center mb-4">
@@ -121,7 +121,7 @@ export default function About() {
             </div>
 
             <div className="pt-6">
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-400 break-words">
                 Join a growing community of mentors and mentees reshaping
                 education in Nigeria.
               </p>
@@ -129,24 +129,25 @@ export default function About() {
           </div>
 
           {/* Right: Founder's Card */}
-          <div className="flex items-center justify-center">
-            <div className="w-full max-w-sm bg-slate-900 rounded-lg p-8 border border-slate-800 hover:border-blue-500 transition-colors duration-300">
+          <div className="flex items-center justify-center lg:justify-end">
+            <div className="w-full max-w-sm bg-slate-900 rounded-lg p-6 sm:p-8 border border-slate-800 hover:border-blue-500 transition-colors duration-300">
               {/* Founder Avatar */}
               <div className="flex items-center justify-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
                   <span className="text-3xl font-bold text-white">ID</span>
                 </div>
               </div>
 
               {/* Founder Info */}
               <div className="text-center mb-6">
-                <h4 className="text-xl font-bold text-white">
+                <h4 className="text-lg sm:text-xl font-bold text-white break-words">
                   Ibrahim Danjuma
                 </h4>
-                <p className="text-sm text-blue-400 font-medium">
+                <p className="text-sm text-blue-400 font-medium break-words">
                   300L CS Student
                 </p>
-                <p className="text-sm text-slate-400">
+
+                <p className="text-sm text-slate-400 break-words">
                   Microsoft Learn Student Ambassador
                 </p>
               </div>

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useState, useEffect } from "react";
 
 export default function SuccessModal({
   sessionDetails = {
@@ -13,43 +12,54 @@ export default function SuccessModal({
 }) {
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Initialize checklist from sessionDetails.aiPrepSheet when component mounts
-  const [checklist, setChecklist] = useState(() => {
-    try {
-      const md = sessionDetails.aiPrepSheet || "";
-      const lines = md
+  // Start with an empty checklist, we will fill it with AI data
+  const [checklist, setChecklist] = useState([]);
+
+  // Dynamically parse the Gemini Markdown into interactive checklist items
+  useEffect(() => {
+    if (sessionDetails.aiPrepSheet) {
+      // Split the text by newlines and grab anything that looks like a list item
+      const lines = sessionDetails.aiPrepSheet
         .split("\n")
         .filter(
           (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
         );
+
       if (lines.length > 0) {
-        return lines.map((line, index) => ({
+        const dynamicChecklist = lines.map((line, index) => ({
           id: index + 1,
+          // Remove the markdown bullets and bold formatting for a clean UI string
           text: line
             .replace(/^[-*]\s*/, "")
             .replace(/\*\*/g, "")
             .trim(),
           completed: false,
         }));
+        setChecklist(dynamicChecklist);
+      } else {
+        // Fallback if the AI returns weird formatting
+        setChecklist([
+          { id: 1, text: "Review the AI prep notes", completed: false },
+        ]);
       }
-    } catch {
-      // fallthrough to default
+    } else {
+      // Default fallback if no AI data is passed
+      setChecklist([
+        { id: 1, text: "Prepare your notes and questions", completed: false },
+        { id: 2, text: "Test your internet connection", completed: false },
+      ]);
     }
-    return [
-      { id: 1, text: "Prepare your notes and questions", completed: false },
-      { id: 2, text: "Test your internet connection", completed: false },
-    ];
-  });
+  }, [sessionDetails.aiPrepSheet]);
 
   // Formatted display for the date (fallback to raw string)
   const formattedDate = (() => {
     try {
-      if (!sessionDetails?.date) return "";
+      if (!sessionDetails?.date) return '';
       const d = new Date(sessionDetails.date);
       if (Number.isNaN(d.getTime())) return sessionDetails.date;
       return d.toLocaleDateString();
-    } catch {
-      return sessionDetails.date || "";
+    } catch (e) {
+      return sessionDetails.date || '';
     }
   })();
 
@@ -62,17 +72,13 @@ export default function SuccessModal({
         setTimeout(() => setCopiedLink(false), 3000);
       }
     } catch (e) {
-      console.error("Copy failed", e);
+      console.error('Copy failed', e);
     }
   };
 
   // Toggle a checklist item
   const toggleChecklistItem = (id) => {
-    setChecklist((prev) =>
-      prev.map((it) =>
-        it.id === id ? { ...it, completed: !it.completed } : it,
-      ),
-    );
+    setChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, completed: !it.completed } : it)));
   };
 
   return (
@@ -202,16 +208,6 @@ export default function SuccessModal({
                 </button>
               ))}
             </div>
-            {sessionDetails.aiPrepSheet && (
-              <div className="mt-4 bg-slate-800/40 border border-slate-700 rounded-lg p-3">
-                <div className="text-slate-300 text-sm font-medium mb-2">
-                  Full prep notes
-                </div>
-                <div className="prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown>{sessionDetails.aiPrepSheet}</ReactMarkdown>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

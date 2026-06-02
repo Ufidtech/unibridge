@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { isValidTimeZone, toISODateTime } from "../../lib/session";
 
 export default function MenteeProposeModal({
   open = true,
@@ -12,6 +13,7 @@ export default function MenteeProposeModal({
   const [dateTime, setDateTime] = useState(null);
   const [notes, setNotes] = useState("");
   const [timezone, setTimezone] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     try {
@@ -22,13 +24,12 @@ export default function MenteeProposeModal({
     }
     if (initialDate && initialTime) {
       try {
-        setDateTime(
-          new Date(
-            initialDate +
-              "T" +
-              (initialTime.length === 5 ? initialTime + ":00" : initialTime),
-          ),
+        const nextDateTime = new Date(
+          initialDate +
+            "T" +
+            (initialTime.length === 5 ? initialTime + ":00" : initialTime),
         );
+        setDateTime(Number.isNaN(nextDateTime.getTime()) ? null : nextDateTime);
       } catch {
         setDateTime(null);
       }
@@ -37,7 +38,7 @@ export default function MenteeProposeModal({
 
   if (!open) return null;
 
-  const canConfirm = dateTime;
+  const canConfirm = dateTime && isValidTimeZone(timezone);
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
@@ -61,6 +62,11 @@ export default function MenteeProposeModal({
             dateFormat="yyyy-MM-dd HH:mm"
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 mb-4"
           />
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              {error}
+            </div>
+          )}
 
           <label className="block text-slate-300 text-sm mb-2">
             Notes (optional)
@@ -80,13 +86,34 @@ export default function MenteeProposeModal({
             Cancel
           </button>
           <button
-            onClick={() =>
+            onClick={() => {
+              if (!canConfirm) {
+                setError("Please choose a valid date, time, and timezone.");
+                return;
+              }
+
+              const sessionDate = dateTime.toISOString().split("T")[0];
+              const sessionTime = dateTime.toTimeString().slice(0, 5);
+              const datetime = toISODateTime({
+                sessionDate,
+                sessionTime,
+                timezone,
+              });
+
+              if (!datetime) {
+                setError(
+                  "The selected time is invalid in the chosen timezone.",
+                );
+                return;
+              }
+
+              setError("");
               onConfirm({
-                datetime: dateTime ? dateTime.toISOString() : null,
+                datetime,
                 notes,
                 timezone,
-              })
-            }
+              });
+            }}
             disabled={!canConfirm}
             className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded disabled:bg-slate-700"
           >

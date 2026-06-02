@@ -3,17 +3,20 @@ export default function HowItWorks() {
     {
       num: "01",
       title: "Ask the AI",
-      description: "Tell our AI what you're struggling with. We'll help you find the right mentor and prep your questions.",
+      description:
+        "Tell our AI what you're struggling with. We'll help you find the right mentor and prep your questions.",
     },
     {
       num: "02",
       title: "Pick a Mentor",
-      description: "Get matched with high-performing undergrads who've walked the same path. Book a 30-minute session.",
+      description:
+        "Get matched with high-performing undergrads who've walked the same path. Book a 30-minute session.",
     },
     {
       num: "03",
       title: "Grow Together",
-      description: "Get insider knowledge on JAMB prep, course selection, tech skills, and surviving 100L.",
+      description:
+        "Get insider knowledge on JAMB prep, course selection, tech skills, and surviving 100L.",
     },
   ];
 
@@ -31,11 +34,11 @@ export default function HowItWorks() {
         </div>
 
         {/* Grid: Stack on mobile, 3 columns on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {steps.map((step, index) => (
             <div
               key={index}
-              className="bg-slate-900 border border-slate-800 rounded-lg p-8 hover:border-blue-500 hover:shadow-lg transition"
+              className="bg-slate-900 border border-slate-800 rounded-lg p-6 sm:p-8 hover:border-blue-500 hover:shadow-lg transition min-w-0"
             >
               {/* Step Number */}
               <div className="text-5xl font-bold text-blue-600 mb-4">
@@ -43,12 +46,12 @@ export default function HowItWorks() {
               </div>
 
               {/* Step Title */}
-              <h3 className="text-xl font-bold text-slate-100 mb-3">
+              <h3 className="text-xl font-bold text-slate-100 mb-3 break-words">
                 {step.title}
               </h3>
 
               {/* Step Description */}
-              <p className="text-slate-400 leading-relaxed">
+              <p className="text-slate-400 leading-relaxed break-words">
                 {step.description}
               </p>
             </div>

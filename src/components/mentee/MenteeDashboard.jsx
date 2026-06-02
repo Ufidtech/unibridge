@@ -5,9 +5,9 @@ import Sidebar from "./Sidebar";
 import AICommandCenter from "../AICommandCenter";
 import MentorCard from "../mentor/MentorCard";
 import MentorExplainModal from "../mentor/MentorExplainModal";
-import MenteeSessions from "./MenteeSessions";
+import MenteeGroupSessions from "./MenteeGroupSessions";
 import MenteeProfile from "./MenteeProfile";
-import { createSession } from "../../lib/api/sessions"; // Updated to use your new API structure
+import { createSession } from "../../lib/api/sessions";
 import { fetchMentors } from "../../lib/api/mentorsApi";
 import { buildSessionPayload } from "../../lib/session";
 import BookSessionModal from "./BookSessionModal";
@@ -187,6 +187,9 @@ export default function MenteeDashboard({
         notes: sessionData.goal,
         mentorName: mentor.name,
       });
+      if (sessionData.datetime) {
+        payload.datetime = sessionData.datetime;
+      }
 
       const res = await createSession(payload);
       setBookedSession({
@@ -205,12 +208,12 @@ export default function MenteeDashboard({
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen flex-col md:flex-row bg-slate-950 overflow-x-hidden">
       <Sidebar userInfo={userInfo} onNavigate={onNavigate} />
 
-      <div className="flex-1 md:ml-0">
-        <div className="bg-slate-900 border-b border-slate-800 p-6 md:p-8 mt-12 md:mt-0">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-100">
+      <div className="flex-1 min-w-0 md:ml-0">
+        <div className="bg-slate-900 border-b border-slate-800 p-4 sm:p-6 md:p-8 mt-12 md:mt-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 break-words">
             Welcome back!
           </h1>
           <p className="text-slate-400 mt-2">
@@ -218,7 +221,7 @@ export default function MenteeDashboard({
           </p>
         </div>
 
-        <div className="p-6 md:p-8">
+        <div className="p-4 sm:p-6 md:p-8 min-w-0">
           {activeTab === "recommended" && (
             <div className="mb-12">
               <AICommandCenter userInfo={userInfo} />
@@ -244,7 +247,7 @@ export default function MenteeDashboard({
                   </p>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                   {mentors.map((mentor) => (
                     <MentorCard
                       key={mentor.id}
@@ -263,7 +266,7 @@ export default function MenteeDashboard({
             )}
 
             {activeTab === "sessions" && (
-              <MenteeSessions onNavigate={onNavigate} mentors={mentors} />
+              <MenteeGroupSessions onNavigate={onNavigate} mentors={mentors} />
             )}
 
             {activeTab === "profile" && (

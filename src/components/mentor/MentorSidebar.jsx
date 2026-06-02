@@ -30,10 +30,23 @@ export default function MentorSidebar({
 
   const navLinks = [
     { label: "Dashboard", icon: "📊", path: "/mentor-dashboard" },
-    { label: "Session Requests", icon: "📬", path: "/mentor-dashboard?tab=requests" },
-    { label: "My Schedule", icon: "📅", path: "/mentor-dashboard?tab=schedule" },
+    {
+      label: "Session Requests",
+      icon: "📬",
+      path: "/mentor-dashboard?tab=requests",
+    },
+    {
+      label: "My Schedule",
+      icon: "📅",
+      path: "/mentor-dashboard?tab=schedule",
+    },
     { label: "Proposals", icon: "🔁", path: "/mentor-dashboard?tab=proposals" },
-    { label: "History", icon: "🕰️", path: "/mentor-dashboard?tab=history" }, // <--- ADD THIS LINE
+    { label: "History", icon: "🕰️", path: "/mentor-dashboard?tab=history" },
+    {
+      label: "Group Sessions",
+      icon: "🎥",
+      path: "/mentor-dashboard?tab=groups",
+    },
     { label: "Profile", icon: "👤", path: "/mentor-dashboard?tab=profile" },
   ];
 
@@ -42,7 +55,7 @@ export default function MentorSidebar({
       {/* Mobile Hamburger Button */}
       <button
         onClick={toggleMenu}
-        className="md:hidden fixed top-4 left-6 z-50 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition transform translate-x-10 cursor-pointer"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition cursor-pointer"
       >
         <svg
           className="w-6 h-6"
@@ -61,7 +74,7 @@ export default function MentorSidebar({
 
       {/* Sidebar - Desktop Always Visible, Mobile in Overlay */}
       <div
-        className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform ${
+        className={`fixed md:sticky top-0 left-0 h-screen w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform overflow-y-auto ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -79,17 +92,19 @@ export default function MentorSidebar({
         </div>
 
         {/* Navigation Links */}
-        <nav className="space-y-4 mb-12">
+        <nav className="space-y-3 mb-12">
           {navLinks.map((link) => {
             // split configured path into pathname and optional search
-            const [linkPathname, linkQuery] = link.path.split('?');
+            const [linkPathname, linkQuery] = link.path.split("?");
             const isPathMatch = location.pathname === linkPathname;
             let isQueryMatch = true;
-            
+
             if (linkQuery) {
               // build search params from linkQuery and compare
               const linkParams = new URLSearchParams(linkQuery);
-              const currentParams = new URLSearchParams(location.search.replace(/^\?/, ''));
+              const currentParams = new URLSearchParams(
+                location.search.replace(/^\?/, ""),
+              );
               for (const [k, v] of linkParams.entries()) {
                 if (currentParams.get(k) !== v) {
                   isQueryMatch = false;
@@ -97,14 +112,14 @@ export default function MentorSidebar({
                 }
               }
             }
-            
+
             // If there's NO query in the link (like Dashboard), ensure we are actually on the base URL with no tabs active
             if (!linkQuery && location.search) {
-               isQueryMatch = false;
+              isQueryMatch = false;
             }
 
             const isActive = isPathMatch && isQueryMatch;
-            
+
             return (
               <button
                 key={link.label}
@@ -112,19 +127,21 @@ export default function MentorSidebar({
                   onNavigate(link.path);
                   setIsOpen(false);
                 }}
-                className={`flex items-center space-x-2 py-2 w-full text-left transition cursor-pointer ${
-                  isActive ? 'text-white bg-blue-600 rounded-lg px-3' : 'text-slate-200 hover:text-white'
+                className={`flex items-center space-x-2 py-2 w-full text-left transition cursor-pointer min-w-0 ${
+                  isActive
+                    ? "text-white bg-blue-600 rounded-lg px-3"
+                    : "text-slate-200 hover:text-white"
                 }`}
               >
                 <span>{link.icon}</span>
-                <span>{link.label}</span>
+                <span className="truncate">{link.label}</span>
               </button>
             );
           })}
         </nav>
 
         {/* Mentor Info - Bottom */}
-        <div className="absolute bottom-6 left-6 right-6 space-y-4">
+        <div className="md:absolute md:bottom-6 left-6 right-6 space-y-4 mt-8 md:mt-0 pb-4 md:pb-0">
           <button
             onClick={() => {
               onNavigate("/mentor-dashboard?tab=profile");
@@ -138,8 +155,12 @@ export default function MentorSidebar({
             <p className="text-slate-100 font-semibold text-sm text-center">
               {mentorInfo.name}
             </p>
-            <p className="text-slate-400 text-xs text-center">{mentorInfo.title || mentorInfo.role}</p>
-            <p className="text-slate-500 text-xs text-center mt-1">{mentorInfo.university || 'University'}</p>
+            <p className="text-slate-400 text-xs text-center">
+              {mentorInfo.title || mentorInfo.role}
+            </p>
+            <p className="text-slate-500 text-xs text-center mt-1">
+              {mentorInfo.university || "University"}
+            </p>
           </button>
           <button
             onClick={handleLogout}

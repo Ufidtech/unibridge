@@ -10,6 +10,7 @@ import MentorProfile from "./MentorProfile";
 import MentorRequests from "./MentorRequests";
 import MentorProposals from "./MentorProposals";
 import MentorHistory from "./MentorHistory";
+import MentorGroupSessions from "./MentorGroupSessions";
 import {
   fetchSessions,
   updateSessionStatus,
@@ -305,12 +306,12 @@ export default function MentorDashboard({
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen flex-col md:flex-row bg-slate-950 overflow-x-hidden">
       <MentorSidebar mentorInfo={mentorInfo} onNavigate={onNavigate} />
 
-      <div className="flex-1 md:ml-0">
-        <div className="bg-slate-900 border-b border-slate-800 p-6 md:p-8 mt-12 md:mt-0">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-100">
+      <div className="flex-1 min-w-0 md:ml-0">
+        <div className="bg-slate-900 border-b border-slate-800 p-4 sm:p-6 md:p-8 mt-12 md:mt-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 break-words">
             Welcome back, {mentorInfo.name}!
           </h1>
           <p className="text-slate-400 mt-2">
@@ -318,12 +319,12 @@ export default function MentorDashboard({
           </p>
         </div>
 
-        <div className="p-6 md:p-8">
+        <div className="p-4 sm:p-6 md:p-8 min-w-0">
           {/* Default Dashboard View */}
           {!activeTab && (
             <>
               {/* Stats Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 mb-12">
                 {stats.map((stat, idx) => (
                   <StatCard
                     key={idx}
@@ -474,7 +475,7 @@ export default function MentorDashboard({
                       {pendingProposals.slice(0, 2).map((p) => (
                         <div
                           key={p.id}
-                          className="bg-slate-900 border border-yellow-500/30 rounded-lg p-4 flex items-start justify-between transition hover:border-yellow-500/50"
+                          className="bg-slate-900 border border-yellow-500/30 rounded-lg p-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between transition hover:border-yellow-500/50 min-w-0"
                         >
                           <div>
                             <div className="flex items-center gap-3 mb-1">
@@ -499,7 +500,7 @@ export default function MentorDashboard({
                           </div>
 
                           {/* Action buttons (We know these are always pending now) */}
-                          <div className="flex flex-col gap-2 shrink-0 ml-4">
+                          <div className="flex flex-row sm:flex-col gap-2 shrink-0 sm:ml-4 flex-wrap">
                             <button
                               onClick={() =>
                                 handleProposalResponse(p, "ACCEPTED")
@@ -573,6 +574,8 @@ export default function MentorDashboard({
               declinedSessions={declinedSessions}
             />
           )}
+
+          {activeTab === "groups" && <MentorGroupSessions />}
 
           {activeTab === "profile" && (
             <MentorProfile

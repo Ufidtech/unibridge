@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
+    name: "",
+    email: "",
+    message: "",
   });
   const [submitted, setSubmitted] = useState(false);
 
@@ -19,31 +19,39 @@ export default function Contact() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Simulate form submission
-    console.log('Form submitted:', formData);
+    console.log("Form submitted:", formData);
+
     setSubmitted(true);
-    setFormData({ name: '', email: '', message: '' });
+    setFormData({ name: "", email: "", message: "" });
     setTimeout(() => setSubmitted(false), 3000);
   };
 
   return (
-    <section id="contact" className="py-16 md:py-24 px-6 md:px-12 bg-slate-950">
+    <section
+      id="contact"
+      className="py-16 md:py-24 px-4 sm:px-6 md:px-12 bg-slate-950"
+    >
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 break-words">
             Got Questions? We&apos;ve got answers.
           </h2>
+
           <div className="w-16 h-1 bg-blue-500 mx-auto"></div>
         </div>
 
         {/* Main Content Grid: Form (Left) + AI Helper Note (Right) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 items-start">
           {/* Left: Contact Form (takes 2 columns) */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 min-w-0">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name Field */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-slate-300 mb-2 break-words"
+                >
                   Your Name
                 </label>
                 <input
@@ -54,13 +62,16 @@ export default function Contact() {
                   onChange={handleChange}
                   placeholder="Ibrahim Danjuma"
                   required
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors duration-200 min-w-0"
                 />
               </div>
 
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-slate-300 mb-2 break-words"
+                >
                   Email Address
                 </label>
                 <input
@@ -71,13 +82,16 @@ export default function Contact() {
                   onChange={handleChange}
                   placeholder="you@example.com"
                   required
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors duration-200"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors duration-200 min-w-0"
                 />
               </div>
 
               {/* Message Textarea */}
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-slate-300 mb-2">
+                <label
+                  htmlFor="message"
+                  className="block text-sm font-medium text-slate-300 mb-2 break-words"
+                >
                   Message
                 </label>
                 <textarea
@@ -88,20 +102,20 @@ export default function Contact() {
                   placeholder="Tell us how we can help you..."
                   rows="5"
                   required
-                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors duration-200 resize-none"
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors duration-200 resize-none min-w-0"
                 ></textarea>
               </div>
 
               {/* Submit Button & Success Message */}
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <button
                   type="submit"
-                  className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200"
+                  className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200"
                 >
                   Send Message
                 </button>
                 {submitted && (
-                  <span className="text-sm font-medium text-green-400">
+                  <span className="text-sm font-medium text-green-400 break-words">
                     ✓ Message sent! We&apos;ll get back to you soon.
                   </span>
                 )}
@@ -111,12 +125,14 @@ export default function Contact() {
 
           {/* Right: AI Helper Note */}
           <div className="md:col-span-1">
-            <div className="bg-slate-900 border border-blue-500/30 rounded-lg p-6 sticky top-20">
+            <div className="bg-slate-900 border border-blue-500/30 rounded-lg p-6 sticky top-20 min-w-0">
               <div className="flex items-start gap-3 mb-4">
                 <span className="text-2xl">✨</span>
-                <h3 className="text-lg font-semibold text-blue-400">Quick Support</h3>
+                <h3 className="text-lg font-semibold text-blue-400 break-words">
+                  Quick Support
+                </h3>
               </div>
-              <p className="text-sm text-slate-300 leading-relaxed mb-4">
+              <p className="text-sm text-slate-300 leading-relaxed mb-4 break-words">
                 Our AI usually answers support tickets in under 5 minutes!
               </p>
               <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-transparent rounded"></div>
@@ -135,8 +151,11 @@ export default function Contact() {
         {/* Social Links */}
         <div className="mt-16 pt-12 border-t border-slate-800">
           <div className="flex flex-col items-center gap-6">
-            <p className="text-slate-400 text-sm">Follow us on social media</p>
-            <div className="flex gap-6">
+            <p className="text-slate-400 text-sm text-center">
+              Follow us on social media
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-6">
               {/* LinkedIn */}
               <a
                 href="https://linkedin.com"

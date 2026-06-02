@@ -1,5 +1,7 @@
 // Session helpers for frontend usage
 
+const FALLBACK_TIMEZONE = "UTC";
+
 export const defaultSessionForm = {
   mentorId: "",
   mentorName: "",
@@ -8,7 +10,7 @@ export const defaultSessionForm = {
   sessionDate: "", // YYYY-MM-DD
   sessionTime: "", // HH:mm
   timezone:
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIMEZONE,
   notes: "",
 };
 
@@ -20,39 +22,59 @@ export const defaultSessionForm = {
 export function toISODateTime({
   sessionDate,
   sessionTime,
+  timezone,
 }) {
   if (!sessionDate || !sessionTime) {
-    console.warn(
-      "⚠️ Missing sessionDate or sessionTime in toISODateTime"
-    );
+    console.warn("⚠️ Missing sessionDate or sessionTime in toISODateTime");
     return null;
   }
 
+  const normalizedTimezone = isValidTimeZone(timezone)
+    ? timezone
+    : FALLBACK_TIMEZONE;
+
   try {
-    const date = new Date(`${sessionDate}T${sessionTime}`);
+    const candidate = new Date(`${sessionDate}T${sessionTime}:00`);
 
-    if (Number.isNaN(date.getTime())) {
-      console.error("❌ Invalid date/time:", {
-        sessionDate,
-        sessionTime,
-      });
-
+    if (Number.isNaN(candidate.getTime())) {
+      console.error("❌ Invalid date/time:", { sessionDate, sessionTime });
       return null;
     }
 
-    const offset = getLocalTimezoneOffset(date);
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: normalizedTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(candidate);
 
-    const iso = `${sessionDate}T${sessionTime}:00${offset}`;
-
-    console.log("🕒 Generated ISO datetime:", iso);
-
-    return iso;
-  } catch (error) {
-    console.error(
-      "🔥 Failed to generate ISO datetime:",
-      error
+    const lookup = Object.fromEntries(
+      parts
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value])
     );
 
+    const renderedDate = `${lookup.year}-${lookup.month}-${lookup.day}`;
+    const renderedTime = `${lookup.hour}:${lookup.minute}`;
+
+    if (renderedDate !== sessionDate || renderedTime !== sessionTime) {
+      console.error("❌ Timezone/date mismatch detected:", {
+        sessionDate,
+        sessionTime,
+        timezone: normalizedTimezone,
+        renderedDate,
+        renderedTime,
+      });
+      return null;
+    }
+
+    return candidate.toISOString();
+  } catch (error) {
+    console.error("🔥 Failed to generate ISO datetime:", error);
     return null;
   }
 }
@@ -67,15 +89,21 @@ function getLocalTimezoneOffset(date = new Date()) {
 
   const sign = offsetMinutes >= 0 ? "+" : "-";
 
-  const hours = String(
-    Math.floor(Math.abs(offsetMinutes) / 60)
-  ).padStart(2, "0");
-
-  const minutes = String(
-    Math.abs(offsetMinutes) % 60
-  ).padStart(2, "0");
+  const hours = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, "0");
+  const minutes = String(Math.abs(offsetMinutes) % 60).padStart(2, "0");
 
   return `${sign}${hours}:${minutes}`;
+}
+
+export function isValidTimeZone(timeZone) {
+  if (!timeZone || typeof timeZone !== "string") return false;
+
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -94,8 +122,8 @@ export function buildSessionPayload(form) {
 
     timezone: String(
       form.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone ||
-        "UTC"
+      Intl.DateTimeFormat().resolvedOptions().timeZone ||
+      "UTC"
     ).trim(),
 
     notes: String(form.notes || "").trim(),
