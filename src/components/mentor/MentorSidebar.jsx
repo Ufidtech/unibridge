@@ -28,14 +28,49 @@ export default function MentorSidebar({
     window.location.href = "/";
   };
 
-  const navLinks = [
-    { label: "Dashboard", icon: "📊", path: "/mentor-dashboard" },
-    { label: "Session Requests", icon: "📬", path: "/mentor-dashboard?tab=requests" },
-    { label: "My Schedule", icon: "📅", path: "/mentor-dashboard?tab=schedule" },
-    { label: "Proposals", icon: "🔁", path: "/mentor-dashboard?tab=proposals" },
-    { label: "History", icon: "🕰️", path: "/mentor-dashboard?tab=history" }, // <--- ADD THIS LINE
-    { label: "Profile", icon: "👤", path: "/mentor-dashboard?tab=profile" },
-  ];
+ const navLinks = [
+  {
+    label: "Dashboard",
+    icon: "📊",
+    path: "/mentor-dashboard"
+  },
+
+  {
+    label: "Session Requests",
+    icon: "📬",
+    path: "/mentor-dashboard?tab=requests"
+  },
+
+  {
+    label: "My Schedule",
+    icon: "📅",
+    path: "/mentor-dashboard?tab=schedule"
+  },
+
+  {
+    label: "Group Sessions",
+    icon: "👥",
+    path: "/mentor-dashboard?tab=groupsessions"
+  },
+
+  {
+    label: "Proposals",
+    icon: "🔁",
+    path: "/mentor-dashboard?tab=proposals"
+  },
+
+  {
+    label: "History",
+    icon: "🕰️",
+    path: "/mentor-dashboard?tab=history"
+  },
+
+  {
+    label: "Profile",
+    icon: "👤",
+    path: "/mentor-dashboard?tab=profile"
+  },
+];
 
   return (
     <>

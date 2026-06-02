@@ -682,6 +682,7 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
     const publicUser = {
       uid: user.uid,
       name: user.name,
+      email: user.email,
       role: user.role,
       createdAt: user.createdAt,
 
@@ -698,10 +699,8 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
           }),
     };
 
-    console.log("✅ Public profile returned:", {
-      uid: user.uid,
-      role: user.role,
-    });
+
+    console.log("✅ Public profile returned (FULL):", JSON.stringify(publicUser, null, 2));
 
     return res.json({
       user: publicUser,

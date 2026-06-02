@@ -8,6 +8,7 @@ import MentorExplainModal from '../mentor/MentorExplainModal';
 import MenteeSessions from './MenteeSessions';
 import MenteeProfile from './MenteeProfile';
 import { createSession } from '../../lib/api/sessions'; // Updated to use your new API structure
+import GroupSessionsList from './GroupSessionsList';
 import { fetchMentors } from '../../lib/api/mentorsApi';
 import { buildSessionPayload } from '../../lib/session';
 import BookSessionModal from './BookSessionModal';
@@ -153,13 +154,11 @@ export default function MenteeDashboard({ userInfo = { name: 'Ibrahim', level: '
             {activeTab === 'recommended' && (
               <div id="recommended-section">
                 <h2 className="text-2xl font-bold text-slate-100 mb-6">Mentors for You</h2>
-                
                 {loadingMentors && <p className="text-slate-400 mb-4">Loading mentors...</p>}
                 {mentorsError && <p className="text-red-400 mb-4">{mentorsError}</p>}
                 {!loadingMentors && !mentorsError && mentors.length === 0 && (
                   <p className="text-slate-400 mb-4">No mentors found at this time.</p>
                 )}
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {mentors.map((mentor) => (
                     <MentorCard
@@ -170,6 +169,13 @@ export default function MenteeDashboard({ userInfo = { name: 'Ibrahim', level: '
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'groupsessions' && (
+              <div id="group-sessions-section">
+                <h2 className="text-2xl font-bold text-slate-100 mb-6">Available Group Sessions</h2>
+                <GroupSessionsList />
               </div>
             )}
 

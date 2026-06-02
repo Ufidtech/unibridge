@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import BookSessionModal from './BookSessionModal';
+import BookSessionModal from './mentee/BookSessionModal';
 import SuccessModal from './SuccessModal';
 
 export default function ModalDemo() {

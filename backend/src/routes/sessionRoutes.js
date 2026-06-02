@@ -7,6 +7,7 @@ import { createCalendarEvent, sendEmail, updateCalendarEvent } from "../lib/cale
 
 const router = Router();
 
+
 const SESSION_DURATION_MINUTES = Number(
   process.env.SESSION_DURATION_MINUTES || 60,
 );
@@ -1320,4 +1321,691 @@ Topic: ${session.topic}
     }
   },
 );
+
+// -----------------------------------------
+// NOTIFY REGISTERED MENTEES
+// -----------------------------------------
+
+router.post(
+  "/mentor-session/:sessionId/notify-registered",
+  requireAuth,
+  requireRole("MENTOR"),
+  async (req, res, next) => {
+    try {
+
+      const { sessionId } = req.params;
+
+      const sessionRef =
+        firestore
+        .collection("mentorSessions")
+        .doc(sessionId);
+
+      const sessionDoc =
+        await sessionRef.get();
+
+      if (!sessionDoc.exists) {
+
+        return res.status(404).json({
+          error: "Session not found"
+        });
+
+      }
+
+      const session =
+        sessionDoc.data();
+
+      // only creator can notify
+
+      if (
+        session.mentorId !==
+        req.user.uid
+      ) {
+
+        return res.status(403).json({
+          error: "Not authorized"
+        });
+
+      }
+
+      const mentees =
+        session.registeredMentees || [];
+
+      if (!mentees.length) {
+
+        return res.status(400).json({
+          error:
+            "No registered mentees"
+        });
+
+      }
+
+      const menteeEmails =
+        mentees
+          .map(
+            mentee => mentee.email
+          )
+          .filter(Boolean);
+
+      if (!menteeEmails.length) {
+
+        return res.status(400).json({
+          error:
+            "No valid email addresses found"
+        });
+
+      }
+
+      await sendSessionEmails({
+
+        to: menteeEmails,
+
+        subject:
+          `Reminder: ${session.topic}`,
+
+        text: `
+You are registered for an upcoming mentor session.
+
+Topic:
+${session.topic}
+
+Date:
+${session.sessionDate}
+
+Time:
+${session.sessionTime}
+
+Mentor:
+${session.mentor?.name || "Mentor"}
+
+Meeting Link:
+${session.meetLink || "Will be shared later"}
+
+Please join on time.
+        `,
+
+        html: `
+        <div
+          style="
+            font-family:Arial;
+            padding:20px;
+          "
+        >
+
+          <h2>
+            Upcoming Mentor Session
+          </h2>
+
+          <p>
+            You are registered for:
+          </p>
+
+          <div
+            style="
+              background:#f5f5f5;
+              padding:15px;
+              border-radius:10px;
+            "
+          >
+
+            <p>
+              <b>Topic:</b>
+              ${session.topic}
+            </p>
+
+            <p>
+              <b>Date:</b>
+              ${session.sessionDate}
+            </p>
+
+            <p>
+              <b>Time:</b>
+              ${session.sessionTime}
+            </p>
+
+            <p>
+              <b>Mentor:</b>
+              ${session.mentor?.name || "Mentor"}
+            </p>
+
+            ${
+              session.meetLink
+              ? `
+              <p>
+                <a
+                  href="${session.meetLink}"
+                  style="
+                    background:#2563eb;
+                    color:white;
+                    padding:10px 16px;
+                    border-radius:8px;
+                    text-decoration:none;
+                  "
+                >
+                  Join Session
+                </a>
+              </p>
+              `
+              : ""
+            }
+
+          </div>
+
+        </div>
+        `
+      });
+
+      log(
+        "Session reminders sent:",
+        sessionId
+      );
+
+      return res.json({
+
+        success: true,
+
+        notifiedCount:
+          menteeEmails.length,
+
+        message:
+          `Sent reminder to ${menteeEmails.length} mentees`
+
+      });
+
+    } catch (err) {
+
+      errorLog(
+        "NOTIFY SESSION ERROR:",
+        err
+      );
+
+      next(err);
+
+    }
+  }
+);
+// -------------------------
+// MENTEE RSVP FOR GROUP SESSION
+// -------------------------
+
+router.post(
+  "/mentor-session/:sessionId/rsvp",
+  requireAuth,
+  requireRole("MENTEE"),
+  async (req, res, next) => {
+    try {
+      const { sessionId } = req.params;
+
+      // Fetch mentee profile from Firestore
+      const menteeProfileDoc = await firestore
+        .collection("menteeProfiles")
+        .doc(req.user.uid)
+        .get();
+
+      const menteeProfile =
+        menteeProfileDoc.exists
+          ? menteeProfileDoc.data()
+          : {};
+
+      // Build mentee object with full details
+      const mentee = {
+        id: req.user.uid,
+
+        // fallback logic
+        name:
+          menteeProfile.name ||
+          req.user.name ||
+          "Unknown",
+
+        email:
+          menteeProfile.email ||
+          req.user.email ||
+          "",
+
+        university:
+          menteeProfile.university ||
+          "N/A",
+
+        level:
+          menteeProfile.level ||
+          "N/A",
+
+        department:
+          menteeProfile.department ||
+          "N/A",
+
+        phone:
+          menteeProfile.phone ||
+          "N/A",
+
+        profileImage:
+          menteeProfile.profileImage ||
+          "",
+
+        bio:
+          menteeProfile.bio ||
+          "",
+
+        registeredAt:
+          new Date().toISOString()
+      };
+
+      const sessionRef =
+        firestore
+          .collection("mentorSessions")
+          .doc(sessionId);
+
+      const sessionDoc =
+        await sessionRef.get();
+
+      if (!sessionDoc.exists) {
+        return res.status(404).json({
+          error: "Session not found"
+        });
+      }
+
+      const session =
+        sessionDoc.data();
+
+      // Prevent duplicate registration
+      const alreadyRegistered =
+        (
+          session.registeredMentees || []
+        ).some(
+          (m) =>
+            m.id === mentee.id
+        );
+
+      if (alreadyRegistered) {
+        return res.status(400).json({
+          error:
+            "You have already registered for this session."
+        });
+      }
+
+      // Session full check
+      if (
+        (
+          session.registeredMentees
+            ?.length || 0
+        ) >=
+        session.maxParticipants
+      ) {
+        return res.status(400).json({
+          error:
+            "Session is already full"
+        });
+      }
+
+      const updatedMentees = [
+        ...(session.registeredMentees || []),
+        mentee
+      ];
+
+      await sessionRef.update({
+        registeredMentees:
+          updatedMentees,
+
+        updatedAt:
+          new Date().toISOString()
+      });
+
+      return res.json({
+        success: true,
+        message:
+          "Registration successful",
+        sessionId
+      });
+
+    } catch (err) {
+      errorLog(
+        "POST /mentor-session/:sessionId/rsvp failed:",
+        err
+      );
+
+      return next(err);
+    }
+  }
+);
+
+// -------------------------
+// MENTOR CREATES SESSION
+// -------------------------
+
+router.post(
+  "/mentor-session",
+  requireAuth,
+  requireRole("MENTOR"),
+  async (req, res, next) => {
+    try {
+
+      const body = z.object({
+
+        topic: z.string().min(2),
+
+        sessionDate: z.string(),
+
+        sessionTime: z.string(),
+
+        notes: z.string().optional(),
+
+        timezone: z.string().optional(),
+
+        maxParticipants: z.number()
+          .min(2)
+          .max(100)
+          .optional(),
+
+      }).parse(req.body);
+
+      // =====================================================
+      // CREATE START + END DATE
+      // =====================================================
+
+      const start = new Date(
+        `${body.sessionDate}T${body.sessionTime}`
+      );
+
+      // 1 hour session
+      const end = new Date(
+        start.getTime() + 60 * 60 * 1000
+      );
+
+     // =====================================================
+// CREATE GOOGLE MEET OR FALLBACK
+// =====================================================
+
+let meetingLink = null;
+let meetingProvider = null;
+let googleEventId = null;
+
+const calendarEvent =
+  await createCalendarEvent({
+
+    summary: body.topic,
+
+    description:
+      body.notes ||
+      "Mentor Group Session",
+
+    startDate: start.toISOString(),
+
+    endDate: end.toISOString(),
+
+    attendees: [],
+});
+
+if (calendarEvent?.meetLink) {
+
+  // Google Meet success
+  meetingLink =
+    calendarEvent.meetLink;
+
+  googleEventId =
+    calendarEvent.id;
+
+  meetingProvider =
+    "GOOGLE_MEET";
+
+} else {
+
+  // Fallback room generation
+  const roomName =
+    `unibridge-${
+      Date.now()
+    }-${
+      Math.random()
+      .toString(36)
+      .slice(2,8)
+    }`;
+
+  meetingLink =
+    `https://meet.jit.si/${roomName}`;
+
+  meetingProvider =
+    "JITSI";
+
+  console.log(
+    "⚠ Using fallback meeting room:",
+    meetingLink
+  );
+}
+
+      // =====================================================
+      // SAVE SESSION
+      // =====================================================
+
+      const sessionRef =
+        firestore.collection(
+          "mentorSessions"
+        ).doc();
+
+      const now =
+        new Date().toISOString();
+
+      const session = {
+
+  id: sessionRef.id,
+
+  mentorId: req.user.uid,
+
+  topic: body.topic,
+
+  notes: body.notes || null,
+
+  sessionDate:
+    body.sessionDate,
+
+  sessionTime:
+    body.sessionTime,
+
+  timezone:
+    body.timezone || "UTC",
+
+  meetLink:
+    meetingLink,
+
+  meetingProvider:
+    meetingProvider,
+
+  googleEventId:
+    googleEventId,
+
+  maxParticipants:
+    body.maxParticipants || 10,
+
+  status: "OPEN",
+
+  mentor: {
+    id: req.user.uid,
+    name: req.user.name,
+    email: req.user.email,
+  },
+
+  registeredMentees: [],
+
+  createdAt: now,
+  updatedAt: now,
+};
+
+      await sessionRef.set(session);
+
+      // =====================================================
+      // FETCH MENTEES
+      // =====================================================
+
+      const menteesSnap =
+        await firestore
+          .collection("users")
+          .where(
+            "role",
+            "==",
+            "MENTEE"
+          )
+          .get();
+
+      const menteeEmails =
+        menteesSnap.docs
+          .map(doc => doc.data().email)
+          .filter(Boolean);
+
+      // =====================================================
+      // SEND EMAILS
+      // =====================================================
+
+      await sendEmail({
+
+        to: menteeEmails.join(","),
+
+        subject:
+          `New Mentor Session: ${session.topic}`,
+
+        text:
+`
+A new mentor group session has been created.
+
+Topic:
+${session.topic}
+
+Date:
+${session.sessionDate}
+
+Time:
+${session.sessionTime}
+
+Mentor:
+${req.user.name}
+
+Google Meet:
+${session.meetLink}
+        `,
+      });
+
+      return res.status(201).json({
+        session,
+      });
+
+    } catch (err) {
+
+      console.log(err);
+
+      const zodError =
+        getZodError(err);
+
+      if (zodError) {
+        return res.status(400).json({
+          error: zodError,
+        });
+      }
+
+      next(err);
+    }
+  }
+);
+
+router.get(
+  "/mentor-session",
+  requireAuth,
+  requireRole("MENTOR"),
+  async (req, res, next) => {
+
+    try {
+
+      const snapshot =
+        await firestore
+        .collection("mentorSessions")
+        .where(
+          "mentorId",
+          "==",
+          req.user.uid
+        )
+        .get();
+
+      const sessions =
+        snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .sort((a,b)=>{
+
+            return (
+              new Date(b.createdAt)
+              -
+              new Date(a.createdAt)
+            );
+
+          });
+
+      return res.status(200).json({
+        sessions
+      });
+
+    } catch(err){
+
+      console.log(
+        "GET GROUP SESSIONS ERROR:",
+        err
+      );
+
+      next(err);
+
+    }
+
+});
+
+// -------------------------
+// GET ALL GROUP SESSIONS FOR MENTEES
+// -------------------------
+
+router.get(
+  "/mentor-session/public",
+  requireAuth,
+  async (req, res, next) => {
+
+    try {
+
+      const snapshot =
+      await firestore
+      .collection("mentorSessions")
+      .where(
+        "status",
+        "==",
+        "OPEN"
+      )
+      .get();
+
+      const sessions =
+      snapshot.docs
+      .map(doc => ({
+
+        id: doc.id,
+        ...doc.data()
+
+      }))
+      .sort((a,b)=>{
+
+        return (
+          new Date(a.sessionDate)
+          -
+          new Date(b.sessionDate)
+        );
+
+      });
+
+      return res.json({
+        sessions
+      });
+
+    } catch(err){
+
+      console.log(
+        "GET PUBLIC SESSIONS ERROR:",
+        err
+      );
+
+      next(err);
+
+    }
+
+});
 export default router;

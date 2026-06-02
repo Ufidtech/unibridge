@@ -2,6 +2,66 @@ const API_BASE =
   import.meta.env.VITE_API_BASE || "http://localhost:3001";
 
 /**
+ * Mentor creates a group session (for all mentees)
+ */
+export async function createMentorGroupSession(payload) {
+  console.log("Sending:", payload);
+
+  return apiRequest("/api/sessions/mentor-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Mentee RSVP/register for a mentor group session
+ */
+export async function fetchSessionsForMentees() {
+
+  return apiRequest(
+    "/api/sessions/mentor-session/public"
+  );
+
+}
+
+export async function rsvpMentorGroupSession(
+  sessionId
+){
+
+  return apiRequest(
+    `/api/sessions/mentor-session/${sessionId}/rsvp`,
+    {
+      method:"POST"
+    }
+  );
+
+}
+
+/**
+ * Mentor sends session details to registered mentees
+ */
+export async function notifyRegisteredMentees(sessionId) {
+  return apiRequest(`/api/sessions/mentor-session/${sessionId}/notify-registered`, {
+    method: "POST",
+  });
+}
+
+export async function fetchGroupSessions() {
+
+  return apiRequest(
+    "/api/sessions/mentor-session",
+    {
+      method: "GET"
+    }
+  );
+
+}
+
+
+/**
  * Shared request helper
  */
 async function apiRequest(path, options = {}) {

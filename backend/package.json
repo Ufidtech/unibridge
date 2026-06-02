@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-  "test": "vitest run",
+    "test": "vitest run",
     "db:seed": "node scripts/seedFirebase.js"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "googleapis": "^118.0.0",
     "luxon": "^3.7.2",
     "nodemailer": "^6.9.3",
+    "uuid": "^14.0.0",
     "zod": "^4.0.17"
   },
   "devDependencies": {
