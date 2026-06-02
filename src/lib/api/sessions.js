@@ -1,5 +1,126 @@
 import { apiRequest } from "./client";
 
+<<<<<<< HEAD
+=======
+/**
+ * Mentor creates a group session (for all mentees)
+ */
+export async function createMentorGroupSession(payload) {
+  console.log("Sending:", payload);
+
+  return apiRequest("/api/sessions/mentor-session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * Mentee RSVP/register for a mentor group session
+ */
+export async function fetchSessionsForMentees() {
+
+  return apiRequest(
+    "/api/sessions/mentor-session/public"
+  );
+
+}
+
+export async function rsvpMentorGroupSession(
+  sessionId
+){
+
+  return apiRequest(
+    `/api/sessions/mentor-session/${sessionId}/rsvp`,
+    {
+      method:"POST"
+    }
+  );
+
+}
+
+/**
+ * Mentor sends session details to registered mentees
+ */
+export async function notifyRegisteredMentees(sessionId) {
+  return apiRequest(`/api/sessions/mentor-session/${sessionId}/notify-registered`, {
+    method: "POST",
+  });
+}
+
+export async function fetchGroupSessions() {
+
+  return apiRequest(
+    "/api/sessions/mentor-session",
+    {
+      method: "GET"
+    }
+  );
+
+}
+
+
+/**
+ * Shared request helper
+ */
+async function apiRequest(path, options = {}) {
+  const idToken = localStorage.getItem("idToken");
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+
+  if (idToken) {
+    headers.Authorization = `Bearer ${idToken}`;
+  }
+
+  console.log(`🌐 API Request → ${options.method || "GET"} ${path}`);
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+    });
+
+    let data = null;
+
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+
+    if (!res.ok) {
+      const errorMessage =
+        data?.error ||
+        data?.message ||
+        res.statusText ||
+        "Request failed";
+
+      console.error(`❌ API Error (${res.status}) →`, {
+        path,
+        method: options.method || "GET",
+        error: errorMessage,
+      });
+
+      throw new Error(errorMessage);
+    }
+
+    console.log(`✅ API Success → ${path}`, data);
+
+    return data;
+  } catch (error) {
+    console.error(`🔥 Network/API Failure → ${path}`, error);
+
+    throw new Error(
+      error?.message || "Something went wrong. Please try again."
+    );
+  }
+}
+>>>>>>> local-backup/main-changes
 
 /**
  * Fetch all sessions

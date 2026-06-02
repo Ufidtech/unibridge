@@ -32,26 +32,7 @@ export default function Sidebar({
 
   const navLinks = [
     { label: "Dashboard", icon: "📊", path: "/mentee-dashboard" },
-    {
-      label: "Group Sessions",
-      icon: "🎥",
-      path: "/mentee-dashboard?tab=sessions",
-    },
-    {
-      label: "Schedule",
-      icon: "📅",
-      path: "/mentee-dashboard?tab=schedule",
-    },
-    {
-      label: "Proposals",
-      icon: "🔁",
-      path: "/mentee-dashboard?tab=proposals",
-    },
-    {
-      label: "Requests",
-      icon: "📨",
-      path: "/mentee-dashboard?tab=requests",
-    },
+    { label: "My Sessions", icon: "📅", path: "/mentee-dashboard?tab=sessions" },
     { label: "Profile", icon: "👤", path: "/mentee-dashboard?tab=profile" },
   ];
 
