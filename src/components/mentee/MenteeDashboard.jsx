@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -6,32 +5,15 @@ import Sidebar from "./Sidebar";
 import AICommandCenter from "../AICommandCenter";
 import MentorCard from "../mentor/MentorCard";
 import MentorExplainModal from "../mentor/MentorExplainModal";
-import MenteeGroupSessions from "./MenteeGroupSessions";
+import MenteeSessions from "./MenteeSessions";
 import MenteeProfile from "./MenteeProfile";
-import { createSession } from "../../lib/api/sessions";
+import { createSession } from "../../lib/api/sessions"; // Updated to use your new API structure
+import GroupSessionsList from "./GroupSessionsList";
 import { fetchMentors } from "../../lib/api/mentorsApi";
 import { buildSessionPayload } from "../../lib/session";
 import BookSessionModal from "./BookSessionModal";
 import SuccessModal from "../SuccessModal";
 import NIGERIA_UNIVERSITIES from "../../data/nigeriaUniversities";
-=======
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import Sidebar from './Sidebar';
-import AICommandCenter from '../AICommandCenter';
-import MentorCard from '../mentor/MentorCard';
-import MentorExplainModal from '../mentor/MentorExplainModal';
-import MenteeSessions from './MenteeSessions';
-import MenteeProfile from './MenteeProfile';
-import { createSession } from '../../lib/api/sessions'; // Updated to use your new API structure
-import GroupSessionsList from './GroupSessionsList';
-import { fetchMentors } from '../../lib/api/mentorsApi';
-import { buildSessionPayload } from '../../lib/session';
-import BookSessionModal from './BookSessionModal';
-import SuccessModal from '../SuccessModal';
-import NIGERIA_UNIVERSITIES from '../../data/nigeriaUniversities';
->>>>>>> local-backup/main-changes
 
 export default function MenteeDashboard({
   userInfo = { name: "Ibrahim", level: "SS3" },
@@ -250,25 +232,6 @@ export default function MenteeDashboard({
           <div>
             {activeTab === "recommended" && (
               <div id="recommended-section">
-<<<<<<< HEAD
-                <h2 className="text-2xl font-bold text-slate-100 mb-6">
-                  Mentors for You
-                </h2>
-
-                {loadingMentors && (
-                  <p className="text-slate-400 mb-4">Loading mentors...</p>
-                )}
-                {mentorsError && (
-                  <p className="text-red-400 mb-4">{mentorsError}</p>
-                )}
-                {!loadingMentors && !mentorsError && mentors.length === 0 && (
-                  <p className="text-slate-400 mb-4">
-                    No mentors found at this time.
-                  </p>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-=======
                 <h2 className="text-2xl font-bold text-slate-100 mb-6">Mentors for You</h2>
                 {loadingMentors && <p className="text-slate-400 mb-4">Loading mentors...</p>}
                 {mentorsError && <p className="text-red-400 mb-4">{mentorsError}</p>}
@@ -276,7 +239,6 @@ export default function MenteeDashboard({
                   <p className="text-slate-400 mb-4">No mentors found at this time.</p>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
->>>>>>> local-backup/main-changes
                   {mentors.map((mentor) => (
                     <MentorCard
                       key={mentor.id}
@@ -294,10 +256,6 @@ export default function MenteeDashboard({
               </div>
             )}
 
-<<<<<<< HEAD
-            {activeTab === "sessions" && (
-              <MenteeGroupSessions onNavigate={onNavigate} mentors={mentors} />
-=======
             {activeTab === 'groupsessions' && (
               <div id="group-sessions-section">
                 <h2 className="text-2xl font-bold text-slate-100 mb-6">Available Group Sessions</h2>
@@ -307,7 +265,6 @@ export default function MenteeDashboard({
 
             {activeTab === 'sessions' && (
               <MenteeSessions onNavigate={onNavigate} mentors={mentors} />
->>>>>>> local-backup/main-changes
             )}
 
             {activeTab === "profile" && (

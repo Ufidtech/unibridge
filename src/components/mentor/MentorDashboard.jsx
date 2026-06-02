@@ -127,10 +127,7 @@ export default function MentorDashboard({
   };
 
   const handleProposalResponse = async (proposal, status) => {
-<<<<<<< HEAD
     // Optimistically update proposalsList for instant UI feedback
-=======
->>>>>>> local-backup/main-changes
     setProposalsList((prev) =>
       prev.map((p) =>
         p.id === proposal.id && p.sessionId === proposal.sessionId
@@ -148,10 +145,7 @@ export default function MentorDashboard({
       await loadSessions();
     } catch (err) {
       toast.error(err.message || "Failed to process proposal");
-<<<<<<< HEAD
       // Optionally revert optimistic update on error
-=======
->>>>>>> local-backup/main-changes
       setProposalsList((prev) =>
         prev.map((p) =>
           p.id === proposal.id && p.sessionId === proposal.sessionId
@@ -317,16 +311,6 @@ export default function MentorDashboard({
     <div className="flex min-h-screen flex-col md:flex-row bg-slate-950 overflow-x-hidden">
       <MentorSidebar mentorInfo={mentorInfo} onNavigate={onNavigate} />
 
-<<<<<<< HEAD
-      <div className="flex-1 min-w-0 md:ml-0">
-        <div className="bg-slate-900 border-b border-slate-800 p-4 sm:p-6 md:p-8 mt-12 md:mt-0">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 break-words">
-            Welcome back, {mentorInfo.name}!
-          </h1>
-          <p className="text-slate-400 mt-2">
-            Manage your sessions and help the next generation succeed.
-          </p>
-=======
       <div className="flex-1 md:ml-0">
         <div className="bg-slate-900 border-b border-slate-800 p-6 md:p-8 mt-12 md:mt-0 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -346,7 +330,6 @@ export default function MentorDashboard({
               + Create Group Session
             </button>
           )}
->>>>>>> local-backup/main-changes
         </div>
 
         <div className="p-4 sm:p-6 md:p-8 min-w-0">
@@ -528,13 +511,7 @@ export default function MentorDashboard({
                               </div>
                             )}
                           </div>
-
-<<<<<<< HEAD
-                          {/* Action buttons (We know these are always pending now) */}
-                          <div className="flex flex-row sm:flex-col gap-2 shrink-0 sm:ml-4 flex-wrap">
-=======
                           <div className="flex flex-col gap-2 shrink-0 ml-4">
->>>>>>> local-backup/main-changes
                             <button
                               onClick={() =>
                                 handleProposalResponse(p, "ACCEPTED")
