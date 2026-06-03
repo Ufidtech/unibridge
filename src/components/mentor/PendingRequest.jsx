@@ -4,6 +4,7 @@ export default function PendingRequest({
   request,
   onAccept = () => {},
   onDecline = () => {},
+  compact = false,
 }) {
   const [showProfile, setShowProfile] = useState(false);
 
@@ -18,8 +19,13 @@ export default function PendingRequest({
   const menteeEmail =
     mentee?.email || "No email";
 
+  // Support multiple places school/university might be stored: menteeProfile.school, menteeProfile.university, request.school, mentee.school
   const menteeSchool =
     menteeProfile?.school ||
+    menteeProfile?.universityName ||
+    menteeProfile?.university ||
+    request?.school ||
+    mentee?.school ||
     "School not specified";
 
   const menteeClass =
@@ -44,9 +50,13 @@ export default function PendingRequest({
     ? request.aiQuestions
     : [];
 
+  const cardClass = compact
+    ? "bg-slate-900 border-2 border-blue-500/30 rounded-xl p-4 mb-4 hover:border-blue-500 transition text-sm min-h-[180px]"
+    : "bg-slate-900 border-2 border-blue-500/30 rounded-xl p-6 mb-6 hover:border-blue-500 transition min-h-[280px]";
+
   return (
     <>
-      <div className="bg-slate-900 border-2 border-blue-500/30 rounded-xl p-6 mb-6 hover:border-blue-500 transition">
+      <div className={cardClass}>
         
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -64,8 +74,15 @@ export default function PendingRequest({
             </p>
           </div>
 
-          <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 text-xs font-semibold rounded-full">
-            Pending
+          {/* Status badge reflects the actual request status (PENDING, CONFIRMED, DECLINED, CANCELLED, COMPLETED) */}
+          <span className="px-3 py-1 text-xs font-semibold rounded-full"
+            style={{
+              background: request?.status === 'PENDING' ? 'rgba(250,204,21,0.12)' : 'transparent',
+              border: request?.status === 'PENDING' ? '1px solid rgba(250,204,21,0.2)' : '1px solid rgba(148,163,184,0.06)',
+              color: request?.status === 'PENDING' ? '#f59e0b' : '#94a3b8',
+            }}
+          >
+            {request?.status ? request.status.charAt(0) + request.status.slice(1).toLowerCase() : 'Pending'}
           </span>
         </div>
 
@@ -142,22 +159,24 @@ export default function PendingRequest({
           View Full Mentee Profile
         </button>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <button
-            onClick={() => onAccept(request.id)}
-            className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition"
-          >
-            ✓ Accept
-          </button>
+        {/* Action Buttons: only show when request is pending */}
+        {request?.status === "PENDING" && (
+          <div className="flex gap-3">
+            <button
+              onClick={() => onAccept(request.id)}
+              className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition"
+            >
+              ✓ Accept
+            </button>
 
-          <button
-            onClick={() => onDecline(request.id)}
-            className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition"
-          >
-            Decline
-          </button>
-        </div>
+            <button
+              onClick={() => onDecline(request.id)}
+              className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 transition"
+            >
+              Decline
+            </button>
+          </div>
+        )}
       </div>
 
       {/* PROFILE MODAL */}
@@ -192,12 +211,12 @@ export default function PendingRequest({
               {/* School */}
               <div>
                 <p className="text-slate-500 text-sm mb-1">
-                  School
-                </p>
+                    School of choice
+                  </p>
 
-                <p className="text-white">
-                  {menteeSchool}
-                </p>
+                  <p className="text-white">
+                    {menteeSchool}
+                  </p>
               </div>
 
               {/* Class */}

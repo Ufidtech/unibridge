@@ -5,6 +5,8 @@ import { logout } from "../../lib/api/auth";
 export default function MentorSidebar({
   mentorInfo = { name: "Umar Farooq", role: "Mentor" },
   onNavigate = () => {},
+  // counts: an optional object with numeric counts to display in the sidebar
+  counts = { pending: 0, upcoming: 0, groups: 0, proposals: 0, history: 0 },
 }) {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -62,7 +64,7 @@ export default function MentorSidebar({
 
       {/* Sidebar - Desktop Always Visible, Mobile in Overlay */}
       <div
-        className={`fixed md:sticky top-0 left-0 h-screen w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform overflow-y-auto ${
+        className={`fixed md:sticky left-0 md:top-0 md:h-screen w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform md:overflow-y-auto ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -123,6 +125,12 @@ export default function MentorSidebar({
               >
                 <span>{link.icon}</span>
                 <span className="truncate">{link.label}</span>
+                {/* Show count badge for Session Requests when provided via counts.pending */}
+                {link.label === "Session Requests" && counts?.pending > 0 && (
+                  <span className="ml-auto px-2 py-1 bg-red-500/20 text-red-400 text-sm font-semibold rounded-full">
+                    {counts.pending}
+                  </span>
+                )}
               </button>
             );
           })}

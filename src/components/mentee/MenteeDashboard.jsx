@@ -209,19 +209,34 @@ export default function MenteeDashboard({
   };
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row bg-slate-950 overflow-x-hidden">
-      <Sidebar userInfo={userInfo} onNavigate={onNavigate} />
+    <div className="flex min-h-screen bg-slate-950">
+  <Sidebar
+    userInfo={userInfo}
+    onNavigate={onNavigate}
+  />
 
       <div className="flex-1 min-w-0 md:ml-0">
-        <div className="bg-slate-900 border-b border-slate-800 p-4 sm:p-6 md:p-8 mt-12 md:mt-0">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 break-words">
-            Welcome back!
-          </h1>
-          <p className="text-slate-400 mt-2">
-            Discover mentors who align with your goals.
-          </p>
-        </div>
+        <div
+  className="
+    sticky
+    top-0
+    z-30
+    bg-slate-900
+    border-b
+    border-slate-800
+    p-4
+    sm:p-6
+    md:p-8
+  "
+>
+  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100 break-words">
+    Welcome back!
+  </h1>
 
+  <p className="text-slate-400 mt-2">
+    Discover mentors who align with your goals.
+  </p>
+</div>
         <div className="p-4 sm:p-6 md:p-8 min-w-0">
           {activeTab === "recommended" && (
             <div className="mb-12">
@@ -265,6 +280,28 @@ export default function MenteeDashboard({
 
             {activeTab === 'sessions' && (
               <MenteeSessions onNavigate={onNavigate} mentors={mentors} />
+            )}
+
+            {activeTab === 'schedule' && (
+              <div id="schedule-section">
+                <h2 className="text-2xl font-bold text-slate-100 mb-6">Your Schedule</h2>
+                {/* Reuse sessions view for schedule overview for now */}
+                <MenteeSessions onNavigate={onNavigate} mentors={mentors} />
+              </div>
+            )}
+
+            {activeTab === 'proposals' && (
+              <div id="proposals-section">
+                <h2 className="text-2xl font-bold text-slate-100 mb-6">Proposals</h2>
+                <p className="text-slate-400">You don't have any proposals yet.</p>
+              </div>
+            )}
+
+            {activeTab === 'requests' && (
+              <div id="requests-section">
+                <h2 className="text-2xl font-bold text-slate-100 mb-6">Requests</h2>
+                <p className="text-slate-400">You have no requests at the moment.</p>
+              </div>
             )}
 
             {activeTab === "profile" && (

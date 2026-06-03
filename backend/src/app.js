@@ -9,7 +9,6 @@ import sessionRoutes from './routes/sessionRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import debugRoutes from './routes/debugRoutes.js';
 import devRoutes from './routes/devRoutes.js';
-import groupSessions from './routes/groupSessions.js';
 import opayRoutes from './routes/opay.js';
 
 const app = express();
@@ -36,7 +35,6 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/dev', devRoutes);
-app.use('/api/group-sessions', groupSessions);
 app.use('/api/pay/opay', opayRoutes);
 
 app.use((_req, res) => {

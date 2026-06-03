@@ -168,11 +168,11 @@ export default function MenteeSessions({ onNavigate }) {
       )}
 
       {!loadingSessions && sessions.length > 0 && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {sessions.map((s) => (
             <div
               key={s.id}
-              className="bg-slate-900 border border-slate-800 rounded-lg p-4"
+              className="bg-slate-900 border border-slate-800 rounded-lg p-4 min-h-[160px] flex flex-col justify-between"
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -195,7 +195,7 @@ export default function MenteeSessions({ onNavigate }) {
                 <div className="mt-2 text-slate-400">Notes: {s.notes}</div>
               )}
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2 items-center">
                 {/* Actions: join/propose only for CONFIRMED; cancel allowed for most active statuses */}
                 {s.status === "CONFIRMED" && (
                   <>
@@ -205,7 +205,7 @@ export default function MenteeSessions({ onNavigate }) {
                         href={s.meetLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-2 bg-green-600 text-white rounded cursor-pointer hover:bg-green-700 transition"
+                        className="px-3 py-1.5 bg-green-600 text-white rounded-md cursor-pointer hover:bg-green-700 transition text-sm font-medium"
                       >
                         Join Meeting
                       </a>
@@ -217,7 +217,7 @@ export default function MenteeSessions({ onNavigate }) {
                         setProposeSessionId(s.id);
                         setShowProposeModal(true);
                       }}
-                      className="px-3 py-2 bg-yellow-600 text-white rounded cursor-pointer hover:bg-yellow-700 transition"
+                      className="px-3 py-1.5 bg-yellow-600 text-white rounded-md cursor-pointer hover:bg-yellow-700 transition text-sm font-medium"
                     >
                       Propose new time
                     </button>
@@ -227,11 +227,11 @@ export default function MenteeSessions({ onNavigate }) {
                 {/* Cancel is allowed for any session that is not completed, cancelled or declined */}
                 {!["COMPLETED", "CANCELLED", "DECLINED"].includes(s.status) && (
                   <button
-                    onClick={() => handleCancelClick(s.id)}
-                    className="px-3 py-2 bg-red-600 text-white rounded cursor-pointer hover:bg-red-700 transition"
-                  >
-                    {confirmCancelFor === s.id ? "Confirm cancel" : "Cancel"}
-                  </button>
+                      onClick={() => handleCancelClick(s.id)}
+                      className="px-3 py-1.5 bg-red-600 text-white rounded-md cursor-pointer hover:bg-red-700 transition text-sm font-medium"
+                    >
+                      {confirmCancelFor === s.id ? "Confirm cancel" : "Cancel"}
+                    </button>
                 )}
 
                 {/* COMPLETED SESSION */}
@@ -251,7 +251,7 @@ export default function MenteeSessions({ onNavigate }) {
                           setRateTargetId(s.id);
                           setShowRateModal(true);
                         }}
-                        className="px-3 py-2 bg-indigo-600 text-white rounded cursor-pointer hover:bg-indigo-700 transition"
+                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-md cursor-pointer hover:bg-indigo-700 transition text-sm font-medium"
                       >
                         Rate Mentor
                       </button>

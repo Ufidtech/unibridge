@@ -1675,200 +1675,204 @@ router.post(
   }
 );
 
-// -------------------------
-// MENTOR CREATES SESSION
-// -------------------------
-
 router.post(
   "/mentor-session",
   requireAuth,
   requireRole("MENTOR"),
   async (req, res, next) => {
     try {
-
       const body = z.object({
-
         topic: z.string().min(2),
-
         sessionDate: z.string(),
-
         sessionTime: z.string(),
-
         notes: z.string().optional(),
-
         timezone: z.string().optional(),
-
-        maxParticipants: z.number()
-          .min(2)
-          .max(100)
-          .optional(),
-
+        maxParticipants: z.number().min(2).max(100).optional(),
       }).parse(req.body);
 
-      // =====================================================
-      // CREATE START + END DATE
-      // =====================================================
-
-      const start = new Date(
-        `${body.sessionDate}T${body.sessionTime}`
-      );
-
-      // 1 hour session
-      const end = new Date(
-        start.getTime() + 60 * 60 * 1000
-      );
-
-     // =====================================================
-// CREATE GOOGLE MEET OR FALLBACK
-// =====================================================
-
-let meetingLink = null;
-let meetingProvider = null;
-let googleEventId = null;
-
-const calendarEvent =
-  await createCalendarEvent({
-
-    summary: body.topic,
-
-    description:
-      body.notes ||
-      "Mentor Group Session",
-
-    startDate: start.toISOString(),
-
-    endDate: end.toISOString(),
-
-    attendees: [],
-});
-
-if (calendarEvent?.meetLink) {
-
-  // Google Meet success
-  meetingLink =
-    calendarEvent.meetLink;
-
-  googleEventId =
-    calendarEvent.id;
-
-  meetingProvider =
-    "GOOGLE_MEET";
-
-} else {
-
-  // Fallback room generation
-  const roomName =
-    `unibridge-${
-      Date.now()
-    }-${
-      Math.random()
-      .toString(36)
-      .slice(2,8)
-    }`;
-
-  meetingLink =
-    `https://meet.jit.si/${roomName}`;
-
-  meetingProvider =
-    "JITSI";
-
-  console.log(
-    "⚠ Using fallback meeting room:",
-    meetingLink
-  );
-}
-
-      // =====================================================
-      // SAVE SESSION
-      // =====================================================
-
       const sessionRef =
-        firestore.collection(
-          "mentorSessions"
-        ).doc();
+        firestore.collection("mentorSessions").doc();
 
       const now =
         new Date().toISOString();
 
       const session = {
+        id: sessionRef.id,
 
-  id: sessionRef.id,
+        mentorId: req.user.uid,
 
-  mentorId: req.user.uid,
+        topic: body.topic,
 
-  topic: body.topic,
+        notes: body.notes || null,
 
-  notes: body.notes || null,
+        sessionDate: body.sessionDate,
 
-  sessionDate:
-    body.sessionDate,
+        sessionTime: body.sessionTime,
 
-  sessionTime:
-    body.sessionTime,
+        timezone: body.timezone || "UTC",
 
-  timezone:
-    body.timezone || "UTC",
+        meetLink: null,
 
-  meetLink:
-    meetingLink,
+        meetingProvider: null,
 
-  meetingProvider:
-    meetingProvider,
+        googleEventId: null,
 
-  googleEventId:
-    googleEventId,
+        maxParticipants:
+          body.maxParticipants || 10,
 
-  maxParticipants:
-    body.maxParticipants || 10,
+        status: "OPEN",
 
-  status: "OPEN",
+        mentor: {
+          id: req.user.uid,
+          name: req.user.name,
+          email: req.user.email,
+        },
 
-  mentor: {
-    id: req.user.uid,
-    name: req.user.name,
-    email: req.user.email,
-  },
+        registeredMentees: [],
 
-  registeredMentees: [],
+        createdAt: now,
+        updatedAt: now,
+      };
 
-  createdAt: now,
-  updatedAt: now,
-};
-
+      // SAVE IMMEDIATELY
       await sessionRef.set(session);
 
-      // =====================================================
-      // FETCH MENTEES
-      // =====================================================
+      // RETURN SUCCESS IMMEDIATELY
+      res.status(201).json({
+        session,
+        message:
+          "Session created successfully. Meeting link is being generated.",
+      });
 
-      const menteesSnap =
-        await firestore
-          .collection("users")
-          .where(
-            "role",
-            "==",
-            "MENTEE"
-          )
-          .get();
+      // ====================================================
+      // EVERYTHING BELOW RUNS IN BACKGROUND
+      // ====================================================
 
-      const menteeEmails =
-        menteesSnap.docs
-          .map(doc => doc.data().email)
-          .filter(Boolean);
+      setImmediate(async () => {
+        try {
+          console.log(
+            `📅 Background processing started for ${session.id}`
+          );
 
-      // =====================================================
-      // SEND EMAILS
-      // =====================================================
+          // --------------------------------------------
+          // CREATE GOOGLE CALENDAR EVENT
+          // --------------------------------------------
 
-      await sendEmail({
+          const start = new Date(
+            `${body.sessionDate}T${body.sessionTime}`
+          );
 
-        to: menteeEmails.join(","),
+          const end = new Date(
+            start.getTime() + 60 * 60 * 1000
+          );
 
-        subject:
-          `New Mentor Session: ${session.topic}`,
+          let meetingLink = null;
+          let meetingProvider = null;
+          let googleEventId = null;
 
-        text:
-`
+          const calendarEvent =
+            await createCalendarEvent({
+              summary: body.topic,
+
+              description:
+                body.notes ||
+                "Mentor Group Session",
+
+              startDate:
+                start.toISOString(),
+
+              endDate:
+                end.toISOString(),
+
+              attendees: [],
+            });
+
+          if (calendarEvent?.meetLink) {
+            meetingLink =
+              calendarEvent.meetLink;
+
+            meetingProvider =
+              "GOOGLE_MEET";
+
+            googleEventId =
+              calendarEvent.id;
+
+            console.log(
+              "✅ Google Meet created"
+            );
+          } else {
+            const roomName =
+              `unibridge-${Date.now()}-${Math.random()
+                .toString(36)
+                .slice(2, 8)}`;
+
+            meetingLink =
+              `https://meet.jit.si/${roomName}`;
+
+            meetingProvider =
+              "JITSI";
+
+            console.log(
+              "⚠ Using Jitsi fallback"
+            );
+          }
+
+          // --------------------------------------------
+          // UPDATE SESSION WITH LINK
+          // --------------------------------------------
+
+          await sessionRef.update({
+            meetLink: meetingLink,
+
+            meetingProvider:
+              meetingProvider,
+
+            googleEventId:
+              googleEventId,
+
+            updatedAt:
+              new Date().toISOString(),
+          });
+
+          console.log(
+            "✅ Session updated with meeting link"
+          );
+
+          // --------------------------------------------
+          // FETCH MENTEES
+          // --------------------------------------------
+
+          const menteesSnap =
+            await firestore
+              .collection("users")
+              .where(
+                "role",
+                "==",
+                "MENTEE"
+              )
+              .get();
+
+          const menteeEmails =
+            menteesSnap.docs
+              .map(
+                (doc) =>
+                  doc.data().email
+              )
+              .filter(Boolean);
+
+          // --------------------------------------------
+          // SEND EMAIL
+          // --------------------------------------------
+
+          if (menteeEmails.length) {
+            await sendEmail({
+              to:
+                menteeEmails.join(","),
+
+              subject:
+                `New Mentor Session: ${session.topic}`,
+
+              text: `
 A new mentor group session has been created.
 
 Topic:
@@ -1883,17 +1887,31 @@ ${session.sessionTime}
 Mentor:
 ${req.user.name}
 
-Google Meet:
-${session.meetLink}
-        `,
-      });
+Meeting Link:
+${meetingLink}
+`,
+            });
 
-      return res.status(201).json({
-        session,
-      });
+            console.log(
+              `✅ Email sent to ${menteeEmails.length} mentees`
+            );
+          }
+        } catch (err) {
+          console.error(
+            "❌ Background session setup failed:",
+            err
+          );
 
+          await sessionRef.update({
+            meetingProvider:
+              "SETUP_FAILED",
+
+            updatedAt:
+              new Date().toISOString(),
+          });
+        }
+      });
     } catch (err) {
-
       console.log(err);
 
       const zodError =
@@ -1915,40 +1933,33 @@ router.get(
   requireAuth,
   requireRole("MENTOR"),
   async (req, res, next) => {
-
     try {
 
       const snapshot =
         await firestore
-        .collection("mentorSessions")
-        .where(
-          "mentorId",
-          "==",
-          req.user.uid
-        )
-        .get();
+          .collection("mentorSessions")
+          .where(
+            "mentorId",
+            "==",
+            req.user.uid
+          )
+          .orderBy(
+            "createdAt",
+            "desc"
+          )
+          .get();
 
       const sessions =
-        snapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .sort((a,b)=>{
-
-            return (
-              new Date(b.createdAt)
-              -
-              new Date(a.createdAt)
-            );
-
-          });
+        snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
 
       return res.status(200).json({
         sessions
       });
 
-    } catch(err){
+    } catch (err) {
 
       console.log(
         "GET GROUP SESSIONS ERROR:",
@@ -1958,8 +1969,8 @@ router.get(
       next(err);
 
     }
-
-});
+  }
+);
 
 // -------------------------
 // GET ALL GROUP SESSIONS FOR MENTEES
@@ -1969,51 +1980,189 @@ router.get(
   "/mentor-session/public",
   requireAuth,
   async (req, res, next) => {
-
     try {
-
       const snapshot =
-      await firestore
-      .collection("mentorSessions")
-      .where(
-        "status",
-        "==",
-        "OPEN"
-      )
-      .get();
+        await firestore
+          .collection("mentorSessions")
+          .where("status", "==", "OPEN")
+          .orderBy("sessionDate")
+          .get();
 
       const sessions =
-      snapshot.docs
-      .map(doc => ({
-
-        id: doc.id,
-        ...doc.data()
-
-      }))
-      .sort((a,b)=>{
-
-        return (
-          new Date(a.sessionDate)
-          -
-          new Date(b.sessionDate)
-        );
-
-      });
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
       return res.json({
-        sessions
+        sessions,
       });
-
-    } catch(err){
-
+    } catch (err) {
       console.log(
         "GET PUBLIC SESSIONS ERROR:",
         err
       );
 
       next(err);
+    }
+  }
+);
+export default router;
 
+// -------------------------
+// UPDATE MENTOR SESSION
+// -------------------------
+
+router.patch(
+  "/mentor-session/:sessionId",
+  requireAuth,
+  requireRole("MENTOR"),
+  async (req, res, next) => {
+    try {
+      const body = z
+        .object({
+          topic: z.string().min(2).optional(),
+          sessionDate: z.string().optional(),
+          sessionTime: z.string().optional(),
+          notes: z.string().optional(),
+          timezone: z.string().optional(),
+          maxParticipants: z.number().min(2).max(100).optional(),
+        })
+        .parse(req.body);
+
+      const sessionRef = firestore.collection("mentorSessions").doc(req.params.sessionId);
+
+      const sessionDoc = await sessionRef.get();
+
+      if (!sessionDoc.exists) {
+        return res.status(404).json({ error: "Session not found." });
+      }
+
+      const session = sessionDoc.data();
+
+      if (session.mentorId !== req.user.uid) {
+        return res.status(403).json({ error: "You can only update your own sessions." });
+      }
+
+      const updates = {
+        updatedAt: new Date().toISOString(),
+        ...(body.topic ? { topic: body.topic } : {}),
+        ...(body.sessionDate ? { sessionDate: body.sessionDate } : {}),
+        ...(body.sessionTime ? { sessionTime: body.sessionTime } : {}),
+        ...(body.notes !== undefined ? { notes: body.notes } : {}),
+        ...(body.timezone ? { timezone: body.timezone } : {}),
+        ...(body.maxParticipants ? { maxParticipants: body.maxParticipants } : {}),
+      };
+
+      await sessionRef.set(updates, { merge: true });
+
+      log(`Mentor session ${req.params.sessionId} updated`);
+
+      const updatedDoc = await sessionRef.get();
+
+      return res.json({ session: { id: updatedDoc.id, ...updatedDoc.data() } });
+    } catch (err) {
+      errorLog("PATCH /mentor-session/:sessionId failed:", err);
+
+      const zodError = getZodError(err);
+
+      if (zodError) {
+        return res.status(400).json({ error: zodError });
+      }
+
+      return next(err);
+    }
+  },
+);
+
+// -------------------------
+// CANCEL MENTOR SESSION
+// -------------------------
+
+router.patch("/mentor-session/:sessionId/cancel", requireAuth, requireRole("MENTOR"), async (req, res, next) => {
+  try {
+    const sessionRef = firestore.collection("mentorSessions").doc(req.params.sessionId);
+
+    const sessionDoc = await sessionRef.get();
+
+    if (!sessionDoc.exists) {
+      return res.status(404).json({ error: "Session not found." });
     }
 
+    const session = sessionDoc.data();
+
+    if (session.mentorId !== req.user.uid) {
+      return res.status(403).json({ error: "You can only cancel your own sessions." });
+    }
+
+    await sessionRef.set({ status: "CANCELLED", updatedAt: new Date().toISOString() }, { merge: true });
+
+    log("Mentor session cancelled:", req.params.sessionId);
+
+    return res.json({ success: true });
+  } catch (err) {
+    errorLog("PATCH /mentor-session/:sessionId/cancel failed:", err);
+
+    const zodError = getZodError(err);
+
+    if (zodError) {
+      return res.status(400).json({ error: zodError });
+    }
+
+    return next(err);
+  }
 });
-export default router;
+
+// -------------------------
+// COMPLETE MENTOR SESSION
+// -------------------------
+
+router.patch(
+  "/mentor-session/:sessionId/complete",
+  requireAuth,
+  requireRole("MENTOR"),
+  async (req, res, next) => {
+    try {
+      const body = z.object({ proof: z.string().min(5).optional(), notes: z.string().optional() }).parse(req.body);
+
+      const sessionRef = firestore.collection("mentorSessions").doc(req.params.sessionId);
+
+      const sessionDoc = await sessionRef.get();
+
+      if (!sessionDoc.exists) {
+        return res.status(404).json({ error: "Session not found." });
+      }
+
+      const session = sessionDoc.data();
+
+      if (session.mentorId !== req.user.uid) {
+        return res.status(403).json({ error: "You can only complete your own sessions." });
+      }
+
+      await sessionRef.set(
+        {
+          status: "COMPLETED",
+          proof: body.proof || null,
+          completedAt: new Date().toISOString(),
+          notes: body.notes !== undefined ? body.notes : session.notes,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+
+      log("Mentor session completed:", req.params.sessionId);
+
+      return res.json({ success: true });
+    } catch (err) {
+      errorLog("PATCH /mentor-session/:sessionId/complete failed:", err);
+
+      const zodError = getZodError(err);
+
+      if (zodError) {
+        return res.status(400).json({ error: zodError });
+      }
+
+      return next(err);
+    }
+  },
+);

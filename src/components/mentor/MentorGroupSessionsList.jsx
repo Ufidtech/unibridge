@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import {
-  fetchGroupSessions,
+  fetchMentorSessions,
   notifyRegisteredMentees,
+  cancelMentorSession,
+  completeMentorSession,
 } from "../../lib/api/sessions";
 
 import GroupSessionCreate from "./GroupSessionCreate";
@@ -14,6 +16,10 @@ export default function MentorGroupSessionsList() {
   const [error, setError] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
+
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completeData, setCompleteData] = useState({ proof: "", notes: "", sessionId: null });
 
   const [showUsersModal, setShowUsersModal] = useState(false);
 
@@ -31,7 +37,7 @@ export default function MentorGroupSessionsList() {
 
       setError(null);
 
-      const data = await fetchGroupSessions();
+      const data = await fetchMentorSessions();
 
       setSessions(Array.isArray(data) ? data : data.sessions || []);
     } catch (err) {
@@ -60,6 +66,42 @@ export default function MentorGroupSessionsList() {
         ...prev,
         [sessionId]: false,
       }));
+    }
+  }
+
+  async function handleDelete(sessionId) {
+    if (!confirm("Are you sure you want to cancel this session?")) return;
+
+    try {
+  await cancelMentorSession(sessionId);
+
+      toast.success("Session cancelled");
+
+      await loadSessions();
+    } catch (err) {
+      toast.error(err.message || "Failed to cancel session");
+    }
+  }
+
+  function openEdit(session) {
+    setEditingSession(session);
+    setShowModal(true);
+  }
+
+  function openComplete(session) {
+    setCompleteData({ proof: "", notes: "", sessionId: session.id });
+    setShowCompleteModal(true);
+  }
+
+  async function submitComplete() {
+    try {
+      const { sessionId, proof, notes } = completeData;
+  await completeMentorSession(sessionId, proof, notes);
+      toast.success("Session marked complete");
+      setShowCompleteModal(false);
+      await loadSessions();
+    } catch (err) {
+      toast.error(err.message || "Failed to complete session");
     }
   }
 
@@ -341,14 +383,8 @@ cursor-pointer
 
           {/* Actions */}
 
-          <div
-            className="
-flex
 gap-3
-mt-6
-flex-wrap
-"
-          >
+          <div className="flex gap-3 mt-6 flex-wrap">
             <button
               onClick={() => sendReminder(session.id)}
               disabled={sendingReminder[session.id]}
@@ -383,6 +419,28 @@ cursor-pointer
                 Join Session
               </a>
             )}
+
+              {/* Edit / Delete / Complete actions */}
+              <button
+                onClick={() => openEdit(session)}
+                className="bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded-lg text-white cursor-pointer"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={() => handleDelete(session.id)}
+                className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-white cursor-pointer"
+              >
+                Delete
+              </button>
+
+              <button
+                onClick={() => openComplete(session)}
+                className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg text-white cursor-pointer"
+              >
+                Complete
+              </button>
           </div>
         </div>
       ))}
@@ -539,6 +597,83 @@ space-y-4
 
         </div>
 
+      )}
+
+      {/* Edit/Create Modal (reuses GroupSessionCreate) */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto shadow-2xl">
+            <button
+              onClick={() => {
+                setShowModal(false);
+                setEditingSession(null);
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer transition"
+            >
+              ✕
+            </button>
+
+            <GroupSessionCreate
+              onSessionCreated={async () => {
+                await loadSessions();
+                setShowModal(false);
+                setEditingSession(null);
+              }}
+              initialValues={editingSession}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Complete Modal */}
+      {showCompleteModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 relative shadow-2xl">
+            <button
+              onClick={() => setShowCompleteModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer transition"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-lg font-bold text-white mb-3">Complete Session</h3>
+
+            <div className="mb-3">
+              <label className="block text-sm text-slate-300">Proof (URL)</label>
+              <input
+                type="text"
+                value={completeData.proof}
+                onChange={(e) => setCompleteData((p) => ({ ...p, proof: e.target.value }))}
+                className="w-full p-2 rounded bg-slate-800 text-white"
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-sm text-slate-300">Notes</label>
+              <textarea
+                value={completeData.notes}
+                onChange={(e) => setCompleteData((p) => ({ ...p, notes: e.target.value }))}
+                className="w-full p-2 rounded bg-slate-800 text-white"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={submitComplete}
+                className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white"
+              >
+                Submit
+              </button>
+
+              <button
+                onClick={() => setShowCompleteModal(false)}
+                className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
 

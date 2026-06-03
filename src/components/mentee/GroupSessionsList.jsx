@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { fetchMe } from "../../lib/api/auth";
 import {
@@ -15,10 +15,21 @@ export default function GroupSessionsList() {
   const [rsvpLoading, setRsvpLoading] = useState(null);
   const [confirmSession, setConfirmSession] = useState(null);
   const [mentorModal, setMentorModal] = useState({ open: false, mentor: null, loading: false, error: null });
+  const mentorCache = useRef({});
+
+  // pagination / progressive reveal to improve perceived load
+  const [allSessions, setAllSessions] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(6);
   async function openMentorModal(mentorId) {
     setMentorModal({ open: true, mentor: null, loading: true, error: null });
     try {
+      if (mentorCache.current[mentorId]) {
+        setMentorModal({ open: true, mentor: mentorCache.current[mentorId], loading: false, error: null });
+        return;
+      }
+
       const data = await fetchUserProfile(mentorId);
+      mentorCache.current[mentorId] = data;
       setMentorModal({ open: true, mentor: data, loading: false, error: null });
     } catch (err) {
       setMentorModal({ open: true, mentor: null, loading: false, error: err.message || "Failed to load mentor details" });
@@ -30,29 +41,31 @@ export default function GroupSessionsList() {
   }
 
   useEffect(() => {
-    loadUser();
-    loadSessions();
+    // fetch user + sessions in parallel to reduce waiting time
+    async function boot() {
+      setLoading(true);
+      try {
+        const [meData, sessionsData] = await Promise.all([fetchMe().catch(() => null), fetchSessionsForMentees().catch(() => null)]);
+        if (meData) setUser(meData);
+
+        const loaded = Array.isArray(sessionsData) ? sessionsData : (sessionsData && sessionsData.sessions) || [];
+        setAllSessions(loaded);
+        setSessions(loaded.slice(0, visibleCount));
+      } catch (err) {
+        setError(err?.message || "Failed loading sessions");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    boot();
   }, []);
 
-  async function loadUser() {
-    try {
-      const data = await fetchMe();
-      setUser(data);
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  async function loadSessions() {
-    try {
-      setLoading(true);
-      const data = await fetchSessionsForMentees();
-      setSessions(Array.isArray(data) ? data : data.sessions || []);
-    } catch (err) {
-      setError(err.message || "Failed loading sessions");
-    } finally {
-      setLoading(false);
-    }
+  // helper to reveal more sessions on demand
+  function showMore() {
+    const next = visibleCount + 6;
+    setVisibleCount(next);
+    setSessions(allSessions.slice(0, next));
   }
 
   const me = user?.user || user;
@@ -78,25 +91,59 @@ export default function GroupSessionsList() {
   }
 
   async function handleRSVP(session) {
+    // optimistic update: add me to registeredMentees locally while API call proceeds
+    const prevAll = allSessions.slice();
     try {
       setRsvpLoading(session.id);
+
+      const updated = allSessions.map((s) => {
+        if (s.id !== session.id) return s;
+        const copy = { ...s };
+        const existing = Array.isArray(copy.registeredMentees) ? copy.registeredMentees.slice() : [];
+        existing.push({ id: myId, name: me?.name || me?.displayName || "You" });
+        copy.registeredMentees = existing;
+        return copy;
+      });
+
+      setAllSessions(updated);
+      setSessions(updated.slice(0, visibleCount));
+
       await rsvpMentorGroupSession(session.id);
       toast.success("Successfully registered");
-      await loadSessions(); 
       setConfirmSession(null);
     } catch (err) {
+      // rollback
+      setAllSessions(prevAll);
+      setSessions(prevAll.slice(0, visibleCount));
       toast.error(err?.message || "Registration failed");
     } finally {
       setRsvpLoading(null);
     }
   }
 
-  if (loading) return <div className="text-slate-300 p-6">Loading sessions...</div>;
+  if (loading) {
+    // lightweight skeleton cards to improve perceived performance
+    return (
+      <div className="space-y-4 p-6">
+        {[1,2,3].map((i) => (
+          <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-6 animate-pulse">
+            <div className="h-6 bg-slate-800 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-slate-800 rounded w-1/2 mb-2"></div>
+            <div className="h-20 bg-slate-800 rounded"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   if (error) return <div className="text-red-400 p-6">{error}</div>;
 
   return (
     <div className="space-y-6">
-      {sessions.map((session) => {
+      {sessions.length === 0 && allSessions.length === 0 && (
+        <div className="p-6 text-slate-400">No group sessions are available right now. Check back later.</div>
+      )}
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sessions.map((session) => {
         const state = getSessionState(session, myId);
 
         const labelConfig = {
@@ -135,7 +182,7 @@ export default function GroupSessionsList() {
                 <h2 className="text-xl font-bold text-slate-100 tracking-tight">
                   {session.topic}
                 </h2>
-                
+
                 {/* DATE LABEL & ROW */}
                 <div className="pt-1">
                   <div className="text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1">
@@ -176,15 +223,19 @@ export default function GroupSessionsList() {
               <div className="flex items-center gap-2 text-slate-400">
                 <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider">Host Mentor:</span>
                 <span className="text-slate-200 font-medium">{session.mentor?.name || "Assigned Mentor"}</span>
-                {session.mentor?.id && (
+              </div>
+
+              {session.mentor?.id && (
+                <div className="mt-2">
                   <button
-                    className="ml-2 px-2 py-0.5 text-xs bg-blue-800 hover:bg-blue-700 text-white rounded transition"
                     onClick={() => openMentorModal(session.mentor.id)}
+                    className="text-blue-400 underline text-sm font-medium bg-transparent p-0 hover:text-blue-300 transition"
+                    aria-label={`View details for ${session.mentor?.name || 'mentor'}`}
                   >
                     View Mentor Details
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 text-slate-400 sm:justify-end">
                 <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider">Availability:</span>
@@ -193,55 +244,7 @@ export default function GroupSessionsList() {
                 </span>
               </div>
             </div>
-      {/* Mentor Details Modal */}
-      {mentorModal.open && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl transform transition-all duration-300 scale-100">
-            <h2 className="text-white text-lg font-bold mb-2 flex items-center gap-2">
-              👤 Mentor Details
-            </h2>
-            {mentorModal.loading && <div className="text-slate-300">Loading mentor details...</div>}
-            {mentorModal.error && <div className="text-red-400">{mentorModal.error}</div>}
-            {mentorModal.mentor && mentorModal.mentor.user && (
-              <>
-                {console.log('MENTOR MODAL DATA:', mentorModal.mentor)}
-                <div className="space-y-2 mt-2">
-                  <div><span className="font-semibold text-slate-400">Name:</span> <span className="text-slate-100">{mentorModal.mentor.user.name || 'Not available'}</span></div>
-{mentorModal.mentor.user.email && (
-  <div>
-    <span className="font-semibold text-slate-400">Email:</span>
-    <span className="text-slate-100">{mentorModal.mentor.user.email}</span>
-  </div>
-)}                  {mentorModal.mentor.user.mentorProfile?.bio && (
-                    <div><span className="font-semibold text-slate-400">Bio:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.bio}</span></div>
-                  )}
-                  {mentorModal.mentor.user.mentorProfile?.level && (
-                    <div><span className="font-semibold text-slate-400">Level:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.level}</span></div>
-                  )}
-                  {mentorModal.mentor.user.mentorProfile?.rating !== undefined && (
-                    <div><span className="font-semibold text-slate-400">Rating:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.rating}</span></div>
-                  )}
-                  {mentorModal.mentor.user.mentorProfile?.universityName && (
-                    <div><span className="font-semibold text-slate-400">University:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.universityName}</span></div>
-                  )}
-                  {mentorModal.mentor.user.mentorProfile?.skills && mentorModal.mentor.user.mentorProfile.skills.length > 0 && (
-                    <div><span className="font-semibold text-slate-400">Skills:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.skills.join(', ')}</span></div>
-                  )}
-                  {/* Add more fields as needed */}
-                </div>
-              </>
-            )}
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={closeMentorModal}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition cursor-pointer text-sm font-medium border border-slate-700/60"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            
 
             {/* Action Buttons Container */}
             <div className="flex items-center justify-end pt-2">
@@ -287,7 +290,59 @@ export default function GroupSessionsList() {
             </div>
           </div>
         );
-      })}
+        })}
+      </div>
+
+      {/* Mentor Details Modal */}
+            {mentorModal.open && (
+              <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl transform transition-all duration-300 scale-100">
+                  <h2 className="text-white text-lg font-bold mb-2 flex items-center gap-2">
+                    👤 Mentor Details
+                  </h2>
+                  {mentorModal.loading && <div className="text-slate-300">Loading mentor details...</div>}
+                  {mentorModal.error && <div className="text-red-400">{mentorModal.error}</div>}
+                  {mentorModal.mentor && mentorModal.mentor.user && (
+                    <>
+                      {console.log('MENTOR MODAL DATA:', mentorModal.mentor)}
+                      <div className="space-y-2 mt-2">
+                        <div><span className="font-semibold text-slate-400">Name:</span> <span className="text-slate-100">{mentorModal.mentor.user.name || 'Not available'}</span></div>
+                        {mentorModal.mentor.user.email && (
+                          <div>
+                            <span className="font-semibold text-slate-400">Email:</span>
+                            <span className="text-slate-100">{mentorModal.mentor.user.email}</span>
+                          </div>
+                        )}                  {mentorModal.mentor.user.mentorProfile?.bio && (
+                          <div><span className="font-semibold text-slate-400">Bio:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.bio}</span></div>
+                        )}
+                        {mentorModal.mentor.user.mentorProfile?.level && (
+                          <div><span className="font-semibold text-slate-400">Level:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.level}</span></div>
+                        )}
+                        {mentorModal.mentor.user.mentorProfile?.rating !== undefined && (
+                          <div><span className="font-semibold text-slate-400">Rating:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.rating}</span></div>
+                        )}
+                        {mentorModal.mentor.user.mentorProfile?.universityName && (
+                          <div><span className="font-semibold text-slate-400">University:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.universityName}</span></div>
+                        )}
+                        {mentorModal.mentor.user.mentorProfile?.skills && mentorModal.mentor.user.mentorProfile.skills.length > 0 && (
+                          <div><span className="font-semibold text-slate-400">Skills:</span> <span className="text-slate-100">{mentorModal.mentor.user.mentorProfile.skills.join(', ')}</span></div>
+                        )}
+                        {/* Add more fields as needed */}
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-end mt-6">
+                    <button
+                      onClick={closeMentorModal}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition cursor-pointer text-sm font-medium border border-slate-700/60"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
 
       {/* CONFIRMATION INLINE MODAL */}
       {confirmSession && (
@@ -317,6 +372,18 @@ export default function GroupSessionsList() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Show more pagination control */}
+      {allSessions.length > sessions.length && (
+        <div className="flex justify-center">
+          <button
+            onClick={showMore}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-medium transition"
+          >
+            Show more
+          </button>
         </div>
       )}
     </div>

@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
-import { createMentorGroupSession } from "../../lib/api/sessions";
+import { createGroupSession, updateMentorSession } from "../../lib/api/sessions";
 
 export default function GroupSessionCreate({
   onSessionCreated,
+  initialValues = null,
 }) {
 
-  const [topic, setTopic] = useState("");
-  const [notes, setNotes] = useState("");
-  const [sessionDate, setSessionDate] = useState("");
-  const [sessionTime, setSessionTime] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState(10);
+  const [topic, setTopic] = useState(initialValues?.topic || "");
+  const [notes, setNotes] = useState(initialValues?.notes || "");
+  const [sessionDate, setSessionDate] = useState(initialValues?.sessionDate || "");
+  const [sessionTime, setSessionTime] = useState(initialValues?.sessionTime || "");
+  const [maxParticipants, setMaxParticipants] = useState(initialValues?.maxParticipants || 10);
 
   const [loading, setLoading] = useState(false);
 
@@ -24,8 +25,21 @@ export default function GroupSessionCreate({
     try {
       setLoading(true);
 
-      const response =
-        await createMentorGroupSession({
+      if (initialValues?.id) {
+        // update existing (mentor-specific endpoint)
+        const response = await updateMentorSession(initialValues.id, {
+          topic,
+          notes,
+          sessionDate,
+          sessionTime,
+          maxParticipants,
+        });
+
+        const session = response.session || {};
+
+        toast.success("Session updated successfully!");
+      } else {
+        const response = await createGroupSession({
           topic,
           notes,
           sessionDate,
@@ -37,7 +51,14 @@ export default function GroupSessionCreate({
               .timeZone,
         });
 
-      const session = response.session;
+        const session = response.session;
+
+        setMeetLink(session?.meetLink || "");
+
+        setMeetingProvider(session?.meetingProvider || "");
+
+        toast.success("Session created successfully!");
+      }
 
       setMeetLink(
         session.meetLink || ""
@@ -51,11 +72,14 @@ export default function GroupSessionCreate({
         "Session created successfully!"
       );
 
-      setTopic("");
-      setNotes("");
-      setSessionDate("");
-      setSessionTime("");
-      setMaxParticipants(10);
+      // clear only when creating new
+      if (!initialValues?.id) {
+        setTopic("");
+        setNotes("");
+        setSessionDate("");
+        setSessionTime("");
+        setMaxParticipants(10);
+      }
 
       onSessionCreated?.();
 

@@ -8,15 +8,34 @@ export default function MenteeProfile({ userInfo, universitySuggestions, onNavig
   const [profileForm, setProfileForm] = useState({ school: '', classLevel: '', dreamCourse: '' });
   const [schoolChoice, setSchoolChoice] = useState('');
   const [schoolManual, setSchoolManual] = useState('');
+  // Helper to safely read localStorage menteeData
+  const readLocalMentee = () => {
+    try {
+      const raw = localStorage.getItem('menteeData');
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  };
 
-  // Initialize form when userInfo changes
+  // Initialize form when userInfo changes or when component mounts.
+  // Accept multiple shapes: userInfo, userInfo.user, or cached localStorage.
   useEffect(() => {
-    if (userInfo?.menteeProfile) {
-      const existingSchool = userInfo.menteeProfile.school || userInfo.menteeProfile.university || '';
+    const src = userInfo?.menteeProfile ? { profile: userInfo.menteeProfile, user: userInfo }
+      : userInfo?.user?.menteeProfile ? { profile: userInfo.user.menteeProfile, user: userInfo.user }
+      : null;
+
+    const cached = readLocalMentee();
+
+    const final = src || (cached && cached.menteeProfile ? { profile: cached.menteeProfile, user: cached } : null);
+
+    if (final) {
+      const existingSchool = final.profile.school || final.profile.university || '';
       setProfileForm({
         school: existingSchool,
-        classLevel: userInfo.menteeProfile.classLevel || '',
-        dreamCourse: userInfo.menteeProfile.dreamCourse || '',
+        classLevel: final.profile.classLevel || '',
+        dreamCourse: final.profile.dreamCourse || '',
       });
       setSchoolManual(existingSchool);
     }

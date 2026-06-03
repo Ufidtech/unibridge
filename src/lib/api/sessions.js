@@ -1,11 +1,9 @@
 import { apiRequest } from "./client";
 
-import { apiRequest } from "./client";
-
 /**
  * Mentor-specific group session endpoints
  */
-export async function createMentorGroupSession(payload) {
+export async function createGroupSession(payload) {
   console.log("Sending mentor group session:", payload);
 
   return apiRequest("/api/sessions/mentor-session", {
@@ -21,6 +19,10 @@ export async function fetchSessionsForMentees() {
   return apiRequest("/api/sessions/mentor-session/public");
 }
 
+export async function fetchMentorSessions() {
+  return apiRequest("/api/sessions/mentor-session");
+}
+
 export async function rsvpMentorGroupSession(sessionId) {
   return apiRequest(`/api/sessions/mentor-session/${sessionId}/rsvp`, {
     method: "POST",
@@ -33,25 +35,6 @@ export async function notifyRegisteredMentees(sessionId) {
   });
 }
 
-/**
- * Generic group sessions (different from mentor-session)
- */
-export async function fetchGroupSessions() {
-  return apiRequest("/api/group-sessions");
-}
-
-export async function createGroupSession(payload) {
-  return apiRequest("/api/group-sessions", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function joinGroupSession(sessionId) {
-  return apiRequest(`/api/group-sessions/${sessionId}/join`, {
-    method: "POST",
-  });
-}
 
 /**
  * Existing session helpers
@@ -155,6 +138,35 @@ export async function mentorComplete(sessionId, proof, notes) {
 
   return apiRequest(`/api/sessions/${sessionId}/complete`, {
     method: "PATCH",
+    body: JSON.stringify({ proof, notes }),
+  });
+}
+
+// Mentor-specific wrappers that call mentor-session endpoints
+export async function updateMentorSession(sessionId, payload) {
+  console.log("✏️ Updating mentor session:", { sessionId, payload });
+
+  return apiRequest(`/api/sessions/mentor-session/${sessionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function cancelMentorSession(sessionId) {
+  console.log("❌ Cancelling mentor session:", sessionId);
+
+  return apiRequest(`/api/sessions/mentor-session/${sessionId}/cancel`, {
+    method: "PATCH",
+  });
+}
+
+export async function completeMentorSession(sessionId, proof, notes) {
+  console.log("✅ Completing mentor session:", { sessionId });
+
+  return apiRequest(`/api/sessions/mentor-session/${sessionId}/complete`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ proof, notes }),
   });
 }

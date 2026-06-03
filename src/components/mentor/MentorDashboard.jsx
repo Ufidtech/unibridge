@@ -38,6 +38,7 @@ export default function MentorDashboard({
   const [showCreateModal, setShowCreateModal] = useState(false); // Added for Group Session creation
 
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [allRequestsState, setAllRequestsState] = useState([]);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [proposalsList, setProposalsList] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
@@ -107,21 +108,46 @@ export default function MentorDashboard({
   ];
 
   const handleAcceptRequest = async (requestId) => {
+    // Optimistic update: mark request as CONFIRMED locally, then call API
+    const prevAll = allRequestsState;
     try {
-      await updateSessionStatus(requestId, "CONFIRMED");
+      console.log("ACTION: Accepting request", requestId);
+
+      setAllRequestsState((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status: "CONFIRMED" } : r)),
+      );
+
+      setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+
+      const res = await updateSessionStatus(requestId, "CONFIRMED");
+      console.log("ACTION: accept response", res);
       toast.success("Request accepted and confirmed.");
-      await loadSessions();
     } catch (err) {
+      console.error("Failed to accept request:", err);
+      // rollback
+      setAllRequestsState(prevAll);
       toast.error("Failed to accept request: " + (err.message || err));
     }
   };
 
   const handleDeclineRequest = async (requestId) => {
+    const prevAll = allRequestsState;
     try {
-      await updateSessionStatus(requestId, "DECLINED");
+      console.log("ACTION: Declining request", requestId);
+
+      setAllRequestsState((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status: "DECLINED" } : r)),
+      );
+
+      setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+
+      const res = await updateSessionStatus(requestId, "DECLINED");
+      console.log("ACTION: decline response", res);
       toast("Request declined.");
-      await loadSessions();
     } catch (err) {
+      console.error("Failed to decline request:", err);
+      // rollback
+      setAllRequestsState(prevAll);
       toast.error("Failed to decline request: " + (err.message || err));
     }
   };
@@ -169,8 +195,45 @@ export default function MentorDashboard({
     setLoadingSessions(true);
     setSessionsError(null);
     try {
-      const data = await fetchSessions();
-      const allRequests = data.sessionRequests || [];
+  const data = await fetchSessions();
+      console.log("DEBUG: fetchSessions response:", data);
+
+      const pendingRequests = allRequestsState.filter(
+  (r) => r.status === "PENDING"
+);
+
+const upcomingSessions = allRequestsState
+  .filter((r) => r.status === "CONFIRMED")
+  .map((c) => ({
+    id: c.id || c._id,
+    studentName: c.mentee?.name || "Student",
+    studentInitials: (c.mentee?.name || "S")
+      .split(" ")
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase(),
+    studentClass: c.mentee?.classLevel || "",
+    studentDreamCourse:
+      c.mentee?.menteeProfile?.dreamCourse || c.dreamCourse || c.mentee?.dreamCourse || "",
+    topic: c.topic,
+    date: c.sessionDate,
+    time: c.sessionTime,
+    meetLink: c.meetLink,
+  }));
+
+const completedSessions = allRequestsState.filter(
+  (r) => r.status === "COMPLETED"
+);
+
+const declinedSessions = allRequestsState.filter(
+  (r) => r.status === "DECLINED" || r.status === "CANCELLED"
+);
+      // Support both shapes: { sessionRequests: [...] } or an array returned directly
+      const allRequests = Array.isArray(data) ? data : data?.sessionRequests || [];
+
+      // Save the full list so request tab can show all items regardless of status
+      setAllRequestsState(allRequests);
 
       const requests = allRequests.filter((s) => s.status === "PENDING");
       const confirmed = allRequests.filter((s) => s.status === "CONFIRMED");
@@ -221,6 +284,8 @@ export default function MentorDashboard({
             .join("")
             .toUpperCase(),
           studentClass: c.mentee?.classLevel || "",
+          studentDreamCourse:
+            c.mentee?.menteeProfile?.dreamCourse || c.dreamCourse || c.mentee?.dreamCourse || "",
           topic: c.topic,
           date: c.sessionDate,
           time: c.sessionTime,
@@ -308,11 +373,21 @@ export default function MentorDashboard({
   };
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row bg-slate-950 overflow-x-hidden">
-      <MentorSidebar mentorInfo={mentorInfo} onNavigate={onNavigate} />
+  <div className="fixed md:sticky flex min-h-screen flex-col md:flex-row bg-slate-950 overflow-x-hidden">
+      <MentorSidebar
+        mentorInfo={mentorInfo}
+        onNavigate={onNavigate}
+        counts={{
+          pending: pendingRequests.length,
+          upcoming: upcomingSessions.length,
+          groups: 0,
+          proposals: proposalsList.length,
+          history: completedSessions.length,
+        }}
+      />
 
       <div className="flex-1 md:ml-0">
-        <div className="bg-slate-900 border-b border-slate-800 p-6 md:p-8 mt-12 md:mt-0 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="fixed md:sticky bg-slate-900 border-b border-slate-800 p-6 md:p-8 mt-12 md:mt-0 flex flex-col md:flex-row md:items-center md:justify-between gap-4 sticky top-0 z-30">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-100">
               Welcome back, {mentorInfo.name}!
@@ -352,6 +427,10 @@ export default function MentorDashboard({
 
               {/* Pending Requests Summary */}
               <div className="mb-12">
+                {/* Debug: status counts */}
+                <div className="mb-3 text-sm text-slate-400">
+                  Debug: pending {pendingRequests.length} • upcoming {upcomingSessions.length} • completed {completedSessions.length} • declined {declinedSessions.length}
+                </div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
                     📬 Session Requests
@@ -552,7 +631,8 @@ export default function MentorDashboard({
           {/* Extracted Components */}
           {activeTab === "requests" && (
             <MentorRequests
-              pendingRequests={pendingRequests}
+              // when viewing the dedicated requests tab, show all fetched requests
+              pendingRequests={activeTab === "requests" ? allRequestsState : pendingRequests}
               loadingSessions={loadingSessions}
               sessionsError={sessionsError}
               onAcceptRequest={handleAcceptRequest}

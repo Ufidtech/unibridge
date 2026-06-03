@@ -1,6 +1,7 @@
 // React import not required in modern JSX runtimes
 import PendingRequest from "./PendingRequest";
 import EmailPreviewPanel from "../EmailPreviewPanel";
+import { useState } from "react";
 
 export default function MentorRequests({
   pendingRequests,
@@ -9,6 +10,7 @@ export default function MentorRequests({
   onAcceptRequest,
   onDeclineRequest,
 }) {
+  const [compact, setCompact] = useState(false);
   return (
     <div>
       <div className="mb-12">
@@ -27,16 +29,31 @@ export default function MentorRequests({
         {sessionsError && <p className="text-red-400">{sessionsError}</p>}
 
         {pendingRequests.length > 0 ? (
-          <div>
-            {pendingRequests.map((request) => (
-              <PendingRequest
-                key={request.id}
-                request={request}
-                onAccept={onAcceptRequest}
-                onDecline={onDeclineRequest}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <div />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCompact((c) => !c)}
+                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded transition text-sm"
+                >
+                  {compact ? "Grid view" : "Compact list"}
+                </button>
+              </div>
+            </div>
+
+            <div className={compact ? "space-y-4" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"}>
+              {pendingRequests.map((request) => (
+                <PendingRequest
+                  key={request.id}
+                  request={request}
+                  onAccept={onAcceptRequest}
+                  onDecline={onDeclineRequest}
+                  compact={compact}
+                />
+              ))}
+            </div>
+          </>
         ) : (
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-8 text-center">
             <p className="text-slate-400">
