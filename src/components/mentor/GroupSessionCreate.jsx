@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { createGroupSession, updateMentorSession } from "../../lib/api/sessions";
 
 export default function GroupSessionCreate({
   onSessionCreated,
   initialValues = null,
+  onDelete = null,
 }) {
 
   const [topic, setTopic] = useState(initialValues?.topic || "");
@@ -18,6 +19,18 @@ export default function GroupSessionCreate({
   const [meetLink, setMeetLink] = useState("");
   const [meetingProvider, setMeetingProvider] =
     useState("");
+
+  // When initialValues changes (editing an existing session), rehydrate local state
+  useEffect(() => {
+    if (!initialValues) return;
+    setTopic(initialValues.topic || "");
+    setNotes(initialValues.notes || "");
+    setSessionDate(initialValues.sessionDate || "");
+    setSessionTime(initialValues.sessionTime || "");
+    setMaxParticipants(initialValues.maxParticipants || 10);
+    setMeetLink(initialValues.meetLink || "");
+    setMeetingProvider(initialValues.meetingProvider || "");
+  }, [initialValues]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,7 +48,10 @@ export default function GroupSessionCreate({
           maxParticipants,
         });
 
-        const session = response.session || {};
+        const updated = response.session || {};
+
+        setMeetLink(updated.meetLink || "");
+        setMeetingProvider(updated.meetingProvider || "");
 
         toast.success("Session updated successfully!");
       } else {
@@ -51,26 +67,11 @@ export default function GroupSessionCreate({
               .timeZone,
         });
 
-        const session = response.session;
-
-        setMeetLink(session?.meetLink || "");
-
-        setMeetingProvider(session?.meetingProvider || "");
-
+        const created = response.session || {};
+        setMeetLink(created.meetLink || "");
+        setMeetingProvider(created.meetingProvider || "");
         toast.success("Session created successfully!");
       }
-
-      setMeetLink(
-        session.meetLink || ""
-      );
-
-      setMeetingProvider(
-        session.meetingProvider || ""
-      );
-
-      toast.success(
-        "Session created successfully!"
-      );
 
       // clear only when creating new
       if (!initialValues?.id) {
@@ -98,6 +99,8 @@ export default function GroupSessionCreate({
     }
   };
 
+  const isEditing = Boolean(initialValues?.id);
+
   return (
 
     <div className="max-w-xl mx-auto mt-8">
@@ -108,7 +111,7 @@ export default function GroupSessionCreate({
       >
 
         <h2 className="text-2xl font-bold text-white mb-6">
-          Create Group Session
+          {isEditing ? "Edit Group Session" : "Create Group Session"}
         </h2>
 
         <div className="mb-4">
@@ -203,14 +206,24 @@ export default function GroupSessionCreate({
 
         </div>
 
-        <button
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 rounded p-3 text-white"
-        >
-          {loading
-            ? "Creating..."
-            : "Create Session"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            disabled={loading}
+            className="flex-1 bg-blue-600 hover:bg-blue-500 rounded p-3 text-white"
+          >
+            {loading ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Create Session")}
+          </button>
+
+          {isEditing && onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(initialValues.id)}
+              className="bg-red-600 hover:bg-red-500 rounded p-3 text-white"
+            >
+              Delete
+            </button>
+          )}
+        </div>
 
       </form>
 

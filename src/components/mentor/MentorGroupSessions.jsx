@@ -76,6 +76,8 @@ export default function MentorGroupSessions() {
     }
   }
 
+  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -204,6 +206,7 @@ export default function MentorGroupSessions() {
                   </a>
                 </div>
               )}
+              
             </div>
           ))}
         </div>

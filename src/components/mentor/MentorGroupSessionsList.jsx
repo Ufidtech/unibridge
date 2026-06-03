@@ -26,6 +26,8 @@ export default function MentorGroupSessionsList() {
   const [selectedSessionUsers, setSelectedSessionUsers] = useState([]);
 
   const [sendingReminder, setSendingReminder] = useState({});
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteSessionId, setDeleteSessionId] = useState(null);
 
   useEffect(() => {
     loadSessions();
@@ -70,12 +72,21 @@ export default function MentorGroupSessionsList() {
   }
 
   async function handleDelete(sessionId) {
-    if (!confirm("Are you sure you want to cancel this session?")) return;
+    // Open delete modal
+    setDeleteSessionId(sessionId);
+    setShowDeleteModal(true);
+  }
+
+  async function confirmDelete() {
+    if (!deleteSessionId) return;
 
     try {
-  await cancelMentorSession(sessionId);
+      await cancelMentorSession(deleteSessionId);
 
       toast.success("Session cancelled");
+
+      setShowDeleteModal(false);
+      setDeleteSessionId(null);
 
       await loadSessions();
     } catch (err) {
@@ -197,17 +208,12 @@ text-slate-400
 
       {/* Session Cards */}
 
-      {sessions.map((session) => (
-        <div
-          key={session.id}
-          className="
-bg-slate-900
-border
-border-slate-800
-rounded-xl
-p-6
-"
-        >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {sessions.map((session) => (
+          <div
+            key={session.id}
+            className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between"
+          >
           {/* Top */}
 
           <div
@@ -384,19 +390,11 @@ cursor-pointer
           {/* Actions */}
 
 gap-3
-          <div className="flex gap-3 mt-6 flex-wrap">
+          <div className="flex gap-2 mt-6 flex-wrap justify-end">
             <button
               onClick={() => sendReminder(session.id)}
               disabled={sendingReminder[session.id]}
-              className="
-bg-purple-600
-hover:bg-purple-500
-px-4
-py-2
-rounded-lg
-text-white
-cursor-pointer
-"
+              className="bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
             >
               {sendingReminder[session.id] ? "Sending..." : "Send Reminder"}
             </button>
@@ -406,48 +404,41 @@ cursor-pointer
                 href={session.meetLink}
                 target="_blank"
                 rel="noreferrer"
-                className="
-bg-blue-600
-hover:bg-blue-500
-px-4
-py-2
-rounded-lg
-text-white
-cursor-pointer
-"
+                className="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
               >
                 Join Session
               </a>
             )}
 
-              {/* Edit / Delete / Complete actions */}
-              <button
-                onClick={() => openEdit(session)}
-                className="bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded-lg text-white cursor-pointer"
-              >
-                Edit
-              </button>
+            {/* Edit / Delete / Complete actions */}
+            <button
+              onClick={() => openEdit(session)}
+              className="bg-yellow-600 hover:bg-yellow-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
+            >
+              Edit
+            </button>
 
-              <button
-                onClick={() => handleDelete(session.id)}
-                className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-white cursor-pointer"
-              >
-                Delete
-              </button>
+            <button
+              onClick={() => handleDelete(session.id)}
+              className="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
+            >
+              Delete
+            </button>
 
-              <button
-                onClick={() => openComplete(session)}
-                className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg text-white cursor-pointer"
-              >
-                Complete
-              </button>
+            <button
+              onClick={() => openComplete(session)}
+              className="bg-green-700 hover:bg-green-600 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
+            >
+              Complete
+            </button>
           </div>
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
 
       {/* Users Modal */}
 
-      {showUsersModal && (
+  {showUsersModal && (
         <div
           className="
 fixed
@@ -600,81 +591,7 @@ space-y-4
       )}
 
       {/* Edit/Create Modal (reuses GroupSessionCreate) */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto shadow-2xl">
-            <button
-              onClick={() => {
-                setShowModal(false);
-                setEditingSession(null);
-              }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer transition"
-            >
-              ✕
-            </button>
-
-            <GroupSessionCreate
-              onSessionCreated={async () => {
-                await loadSessions();
-                setShowModal(false);
-                setEditingSession(null);
-              }}
-              initialValues={editingSession}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Complete Modal */}
-      {showCompleteModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 relative shadow-2xl">
-            <button
-              onClick={() => setShowCompleteModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer transition"
-            >
-              ✕
-            </button>
-
-            <h3 className="text-lg font-bold text-white mb-3">Complete Session</h3>
-
-            <div className="mb-3">
-              <label className="block text-sm text-slate-300">Proof (URL)</label>
-              <input
-                type="text"
-                value={completeData.proof}
-                onChange={(e) => setCompleteData((p) => ({ ...p, proof: e.target.value }))}
-                className="w-full p-2 rounded bg-slate-800 text-white"
-              />
-            </div>
-
-            <div className="mb-3">
-              <label className="block text-sm text-slate-300">Notes</label>
-              <textarea
-                value={completeData.notes}
-                onChange={(e) => setCompleteData((p) => ({ ...p, notes: e.target.value }))}
-                className="w-full p-2 rounded bg-slate-800 text-white"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={submitComplete}
-                className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white"
-              >
-                Submit
-              </button>
-
-              <button
-                onClick={() => setShowCompleteModal(false)}
-                className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Users Modal content (no nested edit/complete modals) */}
 
 
       {/* Phone */}
@@ -799,7 +716,7 @@ overflow-y-auto
 "
           >
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => { setShowModal(false); setEditingSession(null); }}
               className="
 absolute
 top-4
@@ -816,8 +733,99 @@ cursor-pointer
               onSessionCreated={() => {
                 loadSessions();
                 setShowModal(false);
+                setEditingSession(null);
+              }}
+              initialValues={editingSession}
+              onDelete={(id) => {
+                setDeleteSessionId(id);
+                setShowDeleteModal(true);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Top-level Complete Modal (moved out of users modal so it always appears) */}
+      {showCompleteModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 relative shadow-2xl">
+            <button
+              onClick={() => setShowCompleteModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer transition"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-lg font-bold text-white mb-3">Complete Session</h3>
+
+            <div className="mb-3">
+              <label className="block text-sm text-slate-300">Proof (URL)</label>
+              <input
+                type="text"
+                value={completeData.proof}
+                onChange={(e) => setCompleteData((p) => ({ ...p, proof: e.target.value }))}
+                className="w-full p-2 rounded bg-slate-800 text-white"
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-sm text-slate-300">Notes</label>
+              <textarea
+                value={completeData.notes}
+                onChange={(e) => setCompleteData((p) => ({ ...p, notes: e.target.value }))}
+                className="w-full p-2 rounded bg-slate-800 text-white"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={submitComplete}
+                className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white"
+              >
+                Submit
+              </button>
+
+              <button
+                onClick={() => setShowCompleteModal(false)}
+                className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-60">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 relative shadow-2xl">
+            <button
+              onClick={() => { setShowDeleteModal(false); setDeleteSessionId(null); }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer transition"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-lg font-bold text-white mb-2">Confirm Delete</h3>
+
+            <p className="text-slate-300 mb-4">Are you sure you want to cancel this session? This action cannot be undone.</p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeleteSessionId(null); }}
+                className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-white"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-white"
+              >
+                Yes, Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { logout } from "../../lib/api/auth";
 
 export default function MentorSidebar({
   mentorInfo = { name: "Umar Farooq", role: "Mentor" },
-  onNavigate = () => {},
+  onNavigate = () => { },
   // counts: an optional object with numeric counts to display in the sidebar
   counts = { pending: 0, upcoming: 0, groups: 0, proposals: 0, history: 0 },
 }) {
@@ -34,7 +34,7 @@ export default function MentorSidebar({
     { label: "Dashboard", icon: "📊", path: "/mentor-dashboard" },
     { label: "Session Requests", icon: "📬", path: "/mentor-dashboard?tab=requests" },
     { label: "My Schedule", icon: "📅", path: "/mentor-dashboard?tab=schedule" },
-    { label: "Group Sessions", icon: "🎥", path: "/mentor-dashboard?tab=groups" },
+    { label: "Group Sessions", icon: "🎥", path: "/mentor-dashboard?tab=groupsessions" },
     { label: "Proposals", icon: "", path: "/mentor-dashboard?tab=proposals" },
     { label: "History", icon: "🕰️", path: "/mentor-dashboard?tab=history" },
     { label: "Profile", icon: "👤", path: "/mentor-dashboard?tab=profile" },
@@ -64,9 +64,8 @@ export default function MentorSidebar({
 
       {/* Sidebar - Desktop Always Visible, Mobile in Overlay */}
       <div
-        className={`fixed md:sticky left-0 md:top-0 md:h-screen w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform md:overflow-y-auto ${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
+        className={`fixed md:sticky left-0 md:top-0 md:h-screen w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform md:overflow-y-auto ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          }`}
       >
         {/* Logo */}
         <div className="mb-12">
@@ -117,11 +116,10 @@ export default function MentorSidebar({
                   onNavigate(link.path);
                   setIsOpen(false);
                 }}
-                className={`flex items-center space-x-2 py-2 w-full text-left transition cursor-pointer min-w-0 ${
-                  isActive
+                className={`flex items-center space-x-2 py-2 w-full text-left transition cursor-pointer min-w-0 ${isActive
                     ? "text-white bg-blue-600 rounded-lg px-3"
                     : "text-slate-200 hover:text-white"
-                }`}
+                  }`}
               >
                 <span>{link.icon}</span>
                 <span className="truncate">{link.label}</span>
