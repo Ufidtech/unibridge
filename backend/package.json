@@ -10,12 +10,16 @@
     "test": "vitest run",
     "db:seed": "node scripts/seedFirebase.js"
   },
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "firebase-admin": "^10.3.0",
+    "firebase-functions": "^4.4.0",
     "googleapis": "^172.0.0",
   "luxon": "^3.7.2",
   "nodemailer": "^8.0.9",
