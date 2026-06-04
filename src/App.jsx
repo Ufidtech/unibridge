@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import useAutoLogout from "./lib/useAutoLogout";
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Route,
   Routes,
   useNavigate,
@@ -145,7 +145,7 @@ export default function App() {
 
   return (
     /* Passed the dynamic basename down to the Router component */
-    <Router basename={import.meta.env.VITE_BASE_PATH || "/"}>
+    <Router>
       <AppRoutes
         menteeData={menteeData}
         setMenteeData={setMenteeData}
