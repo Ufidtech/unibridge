@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 import useAutoLogout from "./lib/useAutoLogout";
 import {
-  HashRouter as Router,
+  BrowserRouter as Router,
   Route,
   Routes,
   useNavigate,
@@ -138,14 +138,11 @@ export default function App() {
         });
     }
 
-    if (savedPage) {
-      window.location.hash = `#${savedPage}`;
-    }
   }, []);
 
   return (
     /* Passed the dynamic basename down to the Router component */
-    <Router>
+    <Router basename="/unibridge">
       <AppRoutes
         menteeData={menteeData}
         setMenteeData={setMenteeData}
