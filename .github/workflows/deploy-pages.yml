@@ -28,17 +28,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 1. Install pnpm first so setup-node can find the cache
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9 # Adjust this if you use a specific major version locally
+
+      # 2. Set up Node.js with pnpm caching enabled
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm # 👈 Changed from 'npm' to 'pnpm'
 
-      - name: Install dependencies (peer-deps workaround)
-        run: npm install --legacy-peer-deps
+      # 3. Install dependencies using pnpm
+      # Note: --no-frozen-lockfile is omitted to ensure best practices, 
+      # and --config.strict-peer-dependencies=false replaces your legacy-peer-deps workaround.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --config.strict-peer-dependencies=false
 
+      # 4. Build app using pnpm
       - name: Build app
-        run: npm run build
+        run: pnpm run build
 
       - name: Add SPA fallback
         run: cp dist/index.html dist/404.html
