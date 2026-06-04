@@ -103,7 +103,7 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
   );
 }
 
-function App() {
+export default function App() {
   const [menteeData, setMenteeData] = useState(() => {
     try {
       const raw = localStorage.getItem("menteeData");
@@ -144,7 +144,8 @@ function App() {
   }, []);
 
   return (
-    <Router>
+    /* Passed the dynamic basename down to the Router component */
+    <Router basename={import.meta.env.VITE_BASE_PATH || "/"}>
       <AppRoutes
         menteeData={menteeData}
         setMenteeData={setMenteeData}
@@ -155,5 +156,3 @@ function App() {
     </Router>
   );
 }
-
-export default App;
