@@ -27,6 +27,98 @@ async function postJson(path, body) {
   return res.json();
 }
 
+export async function registerAdmin(payload) {
+  const clean = Object.fromEntries(
+    Object.entries(payload).filter(([, v]) => v != null),
+  );
+
+  try {
+    const data = await postJson("/api/auth/register/admin", clean);
+
+    if (!data?.customToken) {
+      throw new Error("Unable to create admin account.");
+    }
+
+    const app = initFirebase();
+    const auth = getAuth(app);
+
+    await signInWithCustomToken(auth, data.customToken);
+
+    const idToken = await auth.currentUser.getIdToken();
+
+    localStorage.setItem("idToken", idToken);
+    localStorage.setItem("adminData", JSON.stringify(data.user));
+
+    return {
+      idToken,
+      user: data.user,
+    };
+  } catch (err) {
+    const errorMessage =
+      err?.message ||
+      "Admin registration failed. Please try again.";
+
+    throw new Error(errorMessage, { cause: err });
+  }
+}
+
+export async function loginAdmin(email, password) {
+  try {
+    const app = initFirebase();
+    const auth = getAuth(app);
+
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    const idToken = await userCred.user.getIdToken(true);
+    localStorage.setItem("idToken", idToken);
+
+    const verify = await postJson("/api/auth/verify-token", { idToken });
+    if (verify?.user?.role !== "ADMIN") {
+      throw new Error("This account is not an admin account.");
+    }
+    localStorage.setItem("adminData", JSON.stringify(verify.user));
+
+    return {
+      idToken,
+      user: verify.user,
+    };
+  } catch (err) {
+    throw new Error(err?.message || "Unable to login admin.", { cause: err });
+  }
+}
+
+export async function fetchAdminUsers() {
+  const idToken = localStorage.getItem("idToken");
+  const res = await fetch(`${API_BASE}/api/auth/admin/users`, {
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to fetch admin users");
+  }
+  return data;
+}
+
+export async function updateAdminUserRole(userId, role) {
+  const idToken = localStorage.getItem("idToken");
+  const res = await fetch(`${API_BASE}/api/auth/admin/users/${userId}/role`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ role }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to update role");
+  }
+  return data;
+}
+
 export async function registerMentee(payload) {
   const clean = Object.fromEntries(
     Object.entries(payload).filter(([, v]) => v != null),
@@ -235,6 +327,10 @@ export async function logout() {
     await auth.signOut();
 
     localStorage.removeItem("idToken");
+  localStorage.removeItem("adminData");
+  localStorage.removeItem("menteeData");
+  localStorage.removeItem("mentorData");
+  localStorage.removeItem("currentPage");
 
     sessionStorage.clear();
 

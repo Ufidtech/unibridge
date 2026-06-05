@@ -1,7 +1,11 @@
 import { useState } from "react";
 
-export default function MentorHistory({ completedSessions, declinedSessions }) {
-  const [view, setView] = useState("completed"); // 'completed' or 'declined'
+function money(n) {
+  return `₦${Number(n || 0).toFixed(2)}`;
+}
+
+export default function MentorHistory({ completedSessions, declinedSessions, payouts = [] }) {
+  const [view, setView] = useState("completed"); // 'completed' or 'declined' or 'payouts'
 
   return (
     <div>
@@ -31,6 +35,16 @@ export default function MentorHistory({ completedSessions, declinedSessions }) {
             }`}
           >
             Declined/Cancelled ({declinedSessions.length})
+          </button>
+          <button
+            onClick={() => setView("payouts")}
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition cursor-pointer ${
+              view === "payouts"
+                ? "bg-emerald-600 text-white"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Payouts ({payouts.length})
           </button>
         </div>
       </div>
@@ -105,6 +119,45 @@ export default function MentorHistory({ completedSessions, declinedSessions }) {
           ) : (
             <div className="bg-slate-900 border border-slate-800 rounded-lg p-8 text-center text-slate-400">
               No declined or cancelled sessions.
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === "payouts" && (
+        <div className="space-y-4">
+          {payouts.length > 0 ? (
+            payouts.map((payout) => (
+              <div
+                key={payout.id}
+                className="bg-slate-900 border-l-4 border-emerald-500 rounded-r-lg p-5"
+              >
+                <div className="flex justify-between items-start gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-100">
+                      Private booking payout
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Session: {payout.sessionId}
+                    </p>
+                    <div className="text-sm text-slate-500 mt-2">
+                      Updated: {payout.updatedAt || payout.createdAt || "—"}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-emerald-300">
+                      {money(payout.amount)}
+                    </div>
+                    <span className="mt-2 inline-flex rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase text-emerald-300">
+                      {payout.status || "pending"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="bg-slate-900 border border-slate-800 rounded-lg p-8 text-center text-slate-400">
+              No payout history yet.
             </div>
           )}
         </div>

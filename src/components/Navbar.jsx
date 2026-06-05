@@ -47,6 +47,13 @@ export default function Navbar({ onNavigate = () => {} }) {
             >
               Contact
             </a>
+            <button
+              type="button"
+              onClick={() => onNavigate("/admin/payouts")}
+              className="text-slate-300 hover:text-slate-100 transition"
+            >
+              Admin
+            </button>
           </div>
 
           {/* Sign In Button (Desktop) */}
@@ -118,6 +125,16 @@ export default function Navbar({ onNavigate = () => {} }) {
               className="w-full mt-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg transition cursor-pointer"
             >
               Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate("/admin/payouts");
+                setIsOpen(false);
+              }}
+              className="w-full mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition cursor-pointer"
+            >
+              Admin
             </button>
           </div>
         )}

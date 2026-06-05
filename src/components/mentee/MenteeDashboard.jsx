@@ -7,7 +7,7 @@ import MentorCard from "../mentor/MentorCard";
 import MentorExplainModal from "../mentor/MentorExplainModal";
 import MenteeSessions from "./MenteeSessions";
 import MenteeProfile from "./MenteeProfile";
-import { createSession } from "../../lib/api/sessions"; // Updated to use your new API structure
+import { createPrivateSession } from "../../lib/api/sessions";
 import GroupSessionsList from "./GroupSessionsList";
 import { fetchMentors } from "../../lib/api/mentorsApi";
 import { buildSessionPayload } from "../../lib/session";
@@ -192,12 +192,18 @@ export default function MenteeDashboard({
         payload.datetime = sessionData.datetime;
       }
 
-      const res = await createSession(payload);
+      const res = await createPrivateSession({
+        ...payload,
+        bookingAmount: Number(mentor.sessionPrice || mentor.price || 0),
+        privateBooking: true,
+      });
       setBookedSession({
         mentorName: res.sessionRequest.mentor?.name || mentor.name,
         date: res.sessionRequest.sessionDate,
         time: res.sessionRequest.sessionTime,
         meetLink: res.sessionRequest.meetLink,
+        bookingType: sessionData.bookingType || "PRIVATE_BOOKING",
+        priceSummary: sessionData.priceSummary || null,
         aiPrepSheet: sessionData.aiPrepSheet || null,
       });
 
@@ -321,6 +327,11 @@ export default function MenteeDashboard({
           onConfirm={handleConfirmInitialBooking}
           confirmLabel="Confirm Booking"
           onClose={() => setShowBookModal(false)}
+          price={Number(
+            selectedMentorForBooking.sessionPrice ||
+            selectedMentorForBooking.price ||
+            0,
+          )}
         />
       )}
 

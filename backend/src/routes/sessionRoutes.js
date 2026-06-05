@@ -225,6 +225,8 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
         sessionTime: z.string().min(1),
         notes: z.string().optional(),
         timezone: z.string().optional(),
+        privateBooking: z.boolean().optional(),
+        bookingAmount: z.number().positive().optional(),
       })
       .parse(req.body);
 
@@ -271,6 +273,12 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
     // -------------------------
 
     const mentor = mentorDoc.data();
+    const mentorRate = Number(mentor.sessionPrice || mentor.price || 0);
+    const baseAmount = Number(body.bookingAmount || mentorRate || 0);
+    const menteeFee = Number((baseAmount * 0.1).toFixed(2));
+    const mentorFee = Number((baseAmount * 0.05).toFixed(2));
+    const menteeChargeTotal = Number((baseAmount + menteeFee).toFixed(2));
+    const mentorPayout = Number((baseAmount - mentorFee).toFixed(2));
 
     const menteeProfileDoc = await firestore
       .collection("menteeProfiles")
@@ -315,6 +323,19 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
         id: mentorDoc.id,
         name: mentor.name,
         email: mentor.email,
+        price: mentorRate,
+      },
+
+      privateBooking: Boolean(body.privateBooking),
+
+      payment: {
+        baseAmount,
+        menteeFee,
+        mentorFee,
+        menteeChargeTotal,
+        mentorPayout,
+        currency: "NGN",
+        status: body.privateBooking ? "awaiting_payment" : "not_required",
       },
 
       createdAt: now,
@@ -349,6 +370,58 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
     // -------------------------
 
     await sessionRef.set(sessionRequest);
+
+    if (body.privateBooking) {
+      try {
+        const serviceBase = process.env.API_BASE_URL || process.env.APP_BASE_URL || "";
+        const chargeResponse = await fetch(`${serviceBase}/api/pay/opay/create`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: req.headers.authorization || "",
+          },
+          body: JSON.stringify({
+            sessionId: sessionRef.id,
+            amount: menteeChargeTotal,
+            currency: "NGN",
+            bookingType: "PRIVATE_BOOKING",
+          }),
+        });
+
+        if (chargeResponse.ok) {
+          const chargeData = await chargeResponse.json();
+          sessionRequest.payment.paymentId = chargeData.paymentId;
+          sessionRequest.payment.checkoutUrl = chargeData.checkoutUrl;
+          sessionRequest.payment.paymentToken = chargeData.paymentToken;
+          sessionRequest.payment.status = "pending";
+          sessionRequest.payment.provider = "opay";
+          await sessionRef.set({ payment: sessionRequest.payment }, { merge: true });
+        }
+
+        await firestore.collection("privateBookingRequests").doc(sessionRef.id).set({
+          sessionId: sessionRef.id,
+          mentorId: body.mentorId,
+          menteeId: req.user.uid,
+          status: "awaiting_payment",
+          payment: sessionRequest.payment,
+          payoutStatus: "pending",
+          createdAt: now,
+          updatedAt: now,
+        });
+      } catch (chargeErr) {
+        warn("Private booking payment bootstrap failed, continuing with stored session:", chargeErr?.message);
+        await firestore.collection("privateBookingRequests").doc(sessionRef.id).set({
+          sessionId: sessionRef.id,
+          mentorId: body.mentorId,
+          menteeId: req.user.uid,
+          status: "mock_payment_pending",
+          payment: sessionRequest.payment,
+          payoutStatus: "pending",
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
 
     // -------------------------
     // SEND EMAILS

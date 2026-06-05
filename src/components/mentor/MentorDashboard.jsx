@@ -15,6 +15,7 @@ import MentorHistory from "./MentorHistory";
 import MentorGroupSessions from "./MentorGroupSessions";
 import {
   fetchSessions,
+  fetchMentorPayoutHistory,
   updateSessionStatus,
   mentorReschedule,
   respondToProposal,
@@ -50,10 +51,12 @@ export default function MentorDashboard({
   const [editingProfile, setEditingProfile] = useState(false);
   const [completedSessions, setCompletedSessions] = useState([]);
   const [declinedSessions, setDeclinedSessions] = useState([]);
+  const [payoutHistory, setPayoutHistory] = useState([]);
   const [profileForm, setProfileForm] = useState({
     title: "",
     bio: "",
     university: "",
+    sessionPrice: "",
   });
   const [fullMentorProfile, setFullMentorProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -337,6 +340,7 @@ const declinedSessions = allRequestsState.filter(
         expertise: Array.isArray(mentorData?.skills)
           ? mentorData.skills.join(", ")
           : mentorData?.expertise || "",
+        sessionPrice: mentorData?.sessionPrice || userData?.sessionPrice || "",
       });
     } catch (err) {
       console.error("Failed to load profile:", err);
@@ -345,13 +349,24 @@ const declinedSessions = allRequestsState.filter(
     }
   }
 
+  async function loadPayoutHistory() {
+    try {
+      const data = await fetchMentorPayoutHistory();
+      setPayoutHistory(data.payouts || []);
+    } catch {
+      setPayoutHistory([]);
+    }
+  }
+
   useEffect(() => {
     loadSessions();
     loadMentorProfile();
+    loadPayoutHistory();
     setProfileForm({
       title: mentorInfo?.title || "",
       bio: mentorInfo?.bio || "",
       university: mentorInfo?.university || "",
+      sessionPrice: mentorInfo?.sessionPrice || "",
     });
   }, []);
 
@@ -665,6 +680,7 @@ const declinedSessions = allRequestsState.filter(
             <MentorHistory
               completedSessions={completedSessions}
               declinedSessions={declinedSessions}
+              payouts={payoutHistory}
             />
           )}
 

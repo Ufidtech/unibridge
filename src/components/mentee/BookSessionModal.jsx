@@ -17,12 +17,18 @@ export default function BookSessionModal({
   initialDate = "",
   initialTime = "",
   confirmLabel = "Confirm Booking",
+  price = 0,
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDateTime, setSelectedDateTime] = useState(null);
   const [goal, setGoal] = useState("");
   const [timezone, setTimezone] = useState("");
   const [error, setError] = useState("");
+  const [bookingType, setBookingType] = useState("PRIVATE_BOOKING");
+  const [mentorPrice] = useState(Number(price || mentor?.price || 0));
+  const [bookingLabels] = useState({
+    PRIVATE_BOOKING: "Private booking",
+  });
   const [aiQuestions] = useState([
     "What specific areas of React do you want to master?",
     "What challenges are you facing with your JAMB prep?",
@@ -54,6 +60,11 @@ export default function BookSessionModal({
   const canConfirm =
     selectedDateTime && goal.trim() && isValidTimeZone(timezone);
 
+  const menteeFee = Number((mentorPrice * 0.1).toFixed(2));
+  const mentorFee = Number((mentorPrice * 0.05).toFixed(2));
+  const menteeChargeTotal = Number((mentorPrice + menteeFee).toFixed(2));
+  const mentorPayout = Number((mentorPrice - mentorFee).toFixed(2));
+
   const handleConfirm = async () => {
     if (!canConfirm) {
       setError("Please choose a valid date, time, and timezone.");
@@ -81,6 +92,15 @@ export default function BookSessionModal({
         datetime,
         timezone,
         goal,
+        bookingType,
+          bookingLabel: bookingLabels[bookingType] || bookingType,
+        priceSummary: {
+          mentorPrice,
+          menteeFee,
+          mentorFee,
+          menteeChargeTotal,
+          mentorPayout,
+        },
         aiPrepSheet: data.prepSheet || null,
       });
     } catch (error) {
@@ -144,6 +164,32 @@ export default function BookSessionModal({
               rows="3"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm resize-none"
             ></textarea>
+          </div>
+
+          <div className="mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <p className="text-sm font-semibold text-emerald-300">{bookingLabels[bookingType] || "Private booking"}</p>
+                <p className="text-xs text-slate-400">Secure payment is collected before the session is marked active.</p>
+              </div>
+              <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs text-emerald-200">Recommended</span>
+            </div>
+            <select
+              value={bookingType}
+              onChange={(e) => setBookingType(e.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100"
+            >
+              <option value="PRIVATE_BOOKING">Private booking</option>
+            </select>
+            <p className="mt-2 text-xs text-slate-400">
+              Money is collected from the mentee first. After completion, the mentor payout is created automatically.
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-3 text-xs text-slate-300">
+              <div className="rounded-lg bg-slate-950/50 p-3">
+                <div className="text-slate-500">Total to pay</div>
+                <div className="font-semibold text-base">₦{menteeChargeTotal.toFixed(2)}</div>
+              </div>
+            </div>
           </div>
 
           {/* AI Suggested Questions */}

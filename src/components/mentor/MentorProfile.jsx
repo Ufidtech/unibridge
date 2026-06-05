@@ -87,6 +87,23 @@ export default function MentorProfile({
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
+                Session Price (₦)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={profileForm.sessionPrice || ""}
+                onChange={(e) =>
+                  setProfileForm({ ...profileForm, sessionPrice: e.target.value })
+                }
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
+                placeholder="e.g., 5000"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Bio / About
               </label>
               <textarea
@@ -235,6 +252,17 @@ export default function MentorProfile({
                   </label>
                   <p className="text-slate-100">
                     {fullMentorProfile?.responseTime || "Not set"}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">
+                    Session Price
+                  </label>
+                  <p className="text-slate-100 font-medium">
+                    {fullMentorProfile?.sessionPrice
+                      ? `₦${Number(fullMentorProfile.sessionPrice).toFixed(2)}`
+                      : "Not set"}
                   </p>
                 </div>
 

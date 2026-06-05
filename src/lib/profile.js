@@ -10,6 +10,7 @@ export const defaultMentorProfile = {
   bio: '',
   university: '',
   skills: [],
+  sessionPrice: '',
 };
 
 export function normalizeSchool(school) {
@@ -32,6 +33,7 @@ export function buildMentorPayload(form) {
     university: form.university || '',
     skills: Array.isArray(form.skills) ? form.skills : (form.skills ? [form.skills] : []),
     responseTime: form.responseTime || form.response_time || form.response || '',
+    sessionPrice: form.sessionPrice === '' || form.sessionPrice == null ? '' : Number(form.sessionPrice),
   };
 }
 

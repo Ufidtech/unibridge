@@ -23,6 +23,7 @@ function mapMentorDoc(userDoc, profileDoc) {
     rating: profile.rating ?? 0,
     reviews: profile.reviews ?? 0,
     responseTime: profile.responseTime ?? null,
+    sessionPrice: Number(profile.sessionPrice ?? 0),
   };
 }
 

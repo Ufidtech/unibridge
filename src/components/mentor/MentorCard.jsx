@@ -27,6 +27,8 @@ export default function MentorCard({
   const bio = mentor?.bio || 'No bio provided.';
   const skills = Array.isArray(mentor?.skills) ? mentor.skills : [];
   const responseTime = mentor?.responseTime || 'Response time unknown';
+  const sessionPrice = Number(mentor?.sessionPrice || mentor?.price || 0);
+  const menteeTotal = Number((sessionPrice * 1.1).toFixed(2));
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition flex flex-col">
@@ -82,6 +84,13 @@ export default function MentorCard({
           </div>
           <p className="text-xs text-slate-400">
             {responseTime}
+          </p>
+        </div>
+
+        <div className="mb-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+          <p className="text-xs text-slate-400">Private booking total</p>
+          <p className="text-sm font-semibold text-emerald-300">
+            {sessionPrice > 0 ? `₦${menteeTotal.toFixed(2)}` : 'Price not set yet'}
           </p>
         </div>
 

@@ -52,6 +52,49 @@ export async function createSession(payload) {
   });
 }
 
+export async function createPrivateSession(payload) {
+  console.log("🔒 Creating private booking:", payload);
+
+  return apiRequest("/api/sessions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...payload,
+      privateBooking: true,
+    }),
+  });
+}
+
+export async function createPrivateBookingPayout(payload) {
+  return apiRequest("/api/pay/opay/payout", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchAdminPrivateBookings() {
+  return apiRequest("/api/admin/payouts/private-bookings");
+}
+
+export async function approveAdminPrivatePayout(sessionId, note = "") {
+  return apiRequest(`/api/admin/payouts/private-bookings/${sessionId}/approve-payout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ note }),
+  });
+}
+
+export async function fetchMentorPayoutHistory() {
+  return apiRequest("/api/admin/payouts/mentor/history");
+}
+
 export async function updateSession(sessionId, payload) {
   console.log("✏️ Updating session:", {
     sessionId,

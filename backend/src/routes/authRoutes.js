@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { firebaseAuth, firebaseAdmin, firestore } from "../lib/firebase.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -10,6 +10,11 @@ const registerBaseSchema = z.object({
   email: z.string().email("Invalid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   selectedVibes: z.array(z.string()).optional(),
+});
+
+const adminSchema = registerBaseSchema.extend({
+  role: z.literal("ADMIN").default("ADMIN"),
+  title: z.string().optional(),
 });
 
 function getZodError(error) {
@@ -222,6 +227,74 @@ router.post("/register/mentor", async (req, res) => {
     });
   } catch (error) {
     return handleServerError(res, error, "/register/mentor");
+  }
+});
+
+/* =========================================================
+   REGISTER ADMIN
+========================================================= */
+
+router.post("/register/admin", async (req, res) => {
+  try {
+    const body = adminSchema.parse(req.body);
+    const email = body.email.toLowerCase().trim();
+
+    const existingUser = await firebaseAuth.getUserByEmail(email).catch(() => null);
+    if (existingUser) {
+      await firebaseAuth.setCustomUserClaims(existingUser.uid, { role: "ADMIN" });
+      const now = new Date().toISOString();
+      const userPayload = {
+        uid: existingUser.uid,
+        name: existingUser.displayName || body.name,
+        email: existingUser.email,
+        role: "ADMIN",
+        title: body.title || "Admin",
+        createdAt: now,
+        updatedAt: now,
+      };
+      await firestore.collection("users").doc(existingUser.uid).set(userPayload, { merge: true });
+      await firestore.collection("adminProfiles").doc(existingUser.uid).set({
+        userId: existingUser.uid,
+        title: body.title || "Admin",
+        createdAt: now,
+        updatedAt: now,
+      }, { merge: true });
+      const customToken = await firebaseAdmin.auth().createCustomToken(existingUser.uid, { role: "ADMIN" });
+      return res.status(201).json({ user: userPayload, customToken, alreadyExisted: true });
+    }
+
+    const userRecord = await firebaseAuth.createUser({
+      email,
+      password: body.password,
+      displayName: body.name,
+    });
+
+    await firebaseAuth.setCustomUserClaims(userRecord.uid, { role: "ADMIN" });
+
+    const now = new Date().toISOString();
+    const userPayload = {
+      uid: userRecord.uid,
+      name: body.name,
+      email,
+      role: "ADMIN",
+      title: body.title || "Admin",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await firestore.collection("users").doc(userRecord.uid).set(userPayload);
+    await firestore.collection("adminProfiles").doc(userRecord.uid).set({
+      userId: userRecord.uid,
+      title: body.title || "Admin",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const customToken = await firebaseAdmin.auth().createCustomToken(userRecord.uid, { role: "ADMIN" });
+
+    return res.status(201).json({ user: userPayload, customToken });
+  } catch (error) {
+    return handleServerError(res, error, "/register/admin");
   }
 });
 
@@ -527,6 +600,8 @@ router.patch("/me", requireAuth, async (req, res) => {
         skills: z.array(z.string()).optional(),
 
         responseTime: z.string().optional(),
+        title: z.string().optional(),
+        sessionPrice: z.union([z.number(), z.string()]).optional(),
 
         selectedVibes: z.array(z.string()).optional(),
       })
@@ -605,6 +680,12 @@ router.patch("/me", requireAuth, async (req, res) => {
     if (body.responseTime !== undefined)
       profileUpdates.responseTime = body.responseTime;
 
+    if (body.title !== undefined)
+      profileUpdates.title = body.title;
+
+    if (body.sessionPrice !== undefined)
+      profileUpdates.sessionPrice = Number(body.sessionPrice || 0);
+
     if (body.selectedVibes !== undefined)
       profileUpdates.selectedVibes =
         body.selectedVibes;
@@ -642,6 +723,40 @@ router.patch("/me", requireAuth, async (req, res) => {
     });
   } catch (error) {
     return handleServerError(res, error, "/me PATCH");
+  }
+});
+
+router.get("/admin/users", requireAuth, requireRole("ADMIN"), async (_req, res) => {
+  try {
+    const snapshot = await firestore.collection("users").get();
+    const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return res.json({ users });
+  } catch (error) {
+    return handleServerError(res, error, "/admin/users GET");
+  }
+});
+
+router.patch("/admin/users/:userId/role", requireAuth, requireRole("ADMIN"), async (req, res) => {
+  try {
+    const body = z.object({
+      role: z.enum(["ADMIN", "MENTOR", "MENTEE"]),
+    }).parse(req.body);
+
+    const { userId } = req.params;
+    const userRef = firestore.collection("users").doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    await firebaseAuth.setCustomUserClaims(userId, { role: body.role });
+    await userRef.set({ role: body.role, updatedAt: new Date().toISOString() }, { merge: true });
+
+    const updated = await userRef.get();
+    return res.json({ user: { id: updated.id, ...updated.data() } });
+  } catch (error) {
+    return handleServerError(res, error, "/admin/users/:userId/role PATCH");
   }
 });
 

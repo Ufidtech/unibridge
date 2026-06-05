@@ -15,11 +15,15 @@ import MentorOnboarding from "./components/mentor/MentorOnboarding";
 import MenteeDashboard from "./components/mentee/MenteeDashboard";
 import MentorDashboard from "./components/mentor/MentorDashboard";
 import DevLogin from "./components/DevLogin";
+import AdminPayoutDashboard from "./components/admin/AdminPayoutDashboard";
+import AdminLoginPage from "./components/admin/AdminLoginPage";
+import AdminUserManagement from "./components/admin/AdminUserManagement";
+import AdminRouteGuard from "./components/admin/AdminRouteGuard";
 import { fetchMe } from "./lib/api/auth";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsOfService from "./components/TermsOfService";
 
-function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
+function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData, adminData, setAdminData }) {
   // Auto-logout on token expiry/401 (must be inside Router context)
   useAutoLogout();
   const navigate = useNavigate();
@@ -32,6 +36,9 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
       } else if (page.includes("mentor")) {
         setMentorData(data);
         localStorage.setItem("mentorData", JSON.stringify(data));
+      } else if (page.includes("admin")) {
+        setAdminData(data);
+        localStorage.setItem("adminData", JSON.stringify(data));
       }
     }
     localStorage.setItem("currentPage", page);
@@ -43,6 +50,14 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData }) {
       {/* Dev-only helper route to seed localStorage for quick UI testing */}
       {import.meta.env.DEV && (
         <Route path="/dev-login" element={<DevLogin />} />
+      )}
+      {import.meta.env.DEV && (
+        <>
+          <Route path="/admin/login" element={<AdminLoginPage onLoginSuccess={(data) => handleNavigation("/admin/payouts", data)} />} />
+          <Route path="/admin/payouts" element={<AdminRouteGuard adminData={adminData}><AdminPayoutDashboard onNavigate={handleNavigation} adminInfo={adminData} /></AdminRouteGuard>} />
+          <Route path="/admin/users" element={<AdminRouteGuard adminData={adminData}><AdminUserManagement onNavigate={handleNavigation} adminInfo={adminData} /></AdminRouteGuard>} />
+          <Route path="/admin" element={<AdminRouteGuard adminData={adminData}><AdminPayoutDashboard onNavigate={handleNavigation} adminInfo={adminData} /></AdminRouteGuard>} />
+        </>
       )}
       <Route path="/" element={<LandingPage onNavigate={handleNavigation} />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -122,6 +137,15 @@ export default function App() {
     }
   });
 
+  const [adminData, setAdminData] = useState(() => {
+    try {
+      const raw = localStorage.getItem("adminData");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
   useEffect(() => {
     const savedPage = localStorage.getItem("currentPage");
 
@@ -132,6 +156,7 @@ export default function App() {
           const user = res.user;
           if (user?.role === "MENTEE") setMenteeData(user);
           if (user?.role === "MENTOR") setMentorData(user);
+          if (user?.role === "ADMIN") setAdminData(user);
         })
         .catch(() => {
           // ignore, token may be invalid/expired
@@ -148,6 +173,8 @@ export default function App() {
         setMenteeData={setMenteeData}
         mentorData={mentorData}
         setMentorData={setMentorData}
+        adminData={adminData}
+        setAdminData={setAdminData}
       />
       <Toaster position="top-right" />
     </Router>
