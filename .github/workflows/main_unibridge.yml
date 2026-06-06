@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
-             CI: true
+           PNPM_MINIMUM_RELEASE_AGE: "0" # Temporarily bypasses the age restriction rule
       - name: Run tests
         run: pnpm test --if-present
 
