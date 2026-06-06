@@ -12,6 +12,11 @@
     "backend:dev": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend start"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "protobufjs"
+    ]
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/typography": "^0.5.19",
