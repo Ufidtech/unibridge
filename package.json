@@ -12,11 +12,6 @@
     "backend:dev": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend start"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "protobufjs"
-    ]
-  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/typography": "^0.5.19",
@@ -47,5 +42,11 @@
     "jsdom": "^29.1.1",
     "vite": "^8.0.10",
     "vitest": "^4.1.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "protobufjs",
+      "@firebase/util"
+    ]
   }
 }

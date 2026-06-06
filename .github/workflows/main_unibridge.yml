@@ -27,12 +27,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
-          cache: 'pnpm'
+          node-version: "22.x"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-builds
-
+        run: pnpm install --frozen-lockfile
+        env:
+             CI: true
       - name: Run tests
         run: pnpm test --if-present
 
@@ -75,6 +76,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'unibridge'
-          slot-name: 'Production'
+          app-name: "unibridge"
+          slot-name: "Production"
           package: .

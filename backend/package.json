@@ -4,11 +4,6 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/server.js",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "protobufjs"
-    ]
-  },  
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
@@ -37,5 +32,11 @@
     "nodemon": "^3.1.10",
     "supertest": "^6.3.4",
     "vitest": "^4.1.7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@firebase/util",
+      "protobufjs"
+    ]
   }
 }
