@@ -11,7 +11,7 @@
     "db:seed": "node scripts/seedFirebase.js"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
