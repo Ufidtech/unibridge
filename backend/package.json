@@ -4,6 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/server.js",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "protobufjs"
+    ]
+  },  
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
