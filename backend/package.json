@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "test": "vitest run",
-    "db:seed": "node scripts/seedFirebase.js"
+    "db:seed": "node scripts/seedFirebase.js",
+    "build": "echo \"No build step required\""
   },
   "engines": {
     "node": "18.x"
