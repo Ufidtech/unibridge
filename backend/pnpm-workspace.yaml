@@ -1,3 +1,9 @@
 allowBuilds:
-  '@firebase/util': true
+  "@firebase/util": true
   protobufjs: true
+
+minimumReleaseAge: 1440 # This is your current policy (24 hours)
+
+minimumReleaseAgeExclude:
+  - caniuse-lite
+  - undici
