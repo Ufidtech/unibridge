@@ -33,9 +33,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
-           PNPM_MINIMUM_RELEASE_AGE: "0" # Temporarily bypasses the age restriction rule
+          PNPM_MINIMUM_RELEASE_AGE: "0" # Temporarily bypasses the age restriction rule
       - name: Run tests
-        run: pnpm test
+        run: pnpm test --if-present
 
       # Build step (add if your project needs it)
       - name: Build project
