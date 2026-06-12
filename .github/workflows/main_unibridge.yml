@@ -35,11 +35,11 @@ jobs:
         env:
            PNPM_MINIMUM_RELEASE_AGE: "0" # Temporarily bypasses the age restriction rule
       - name: Run tests
-        run: pnpm test --if-present
+        run: pnpm test
 
       # Build step (add if your project needs it)
       - name: Build project
-        run: pnpm build --if-present
+        run: pnpm build
 
       # Upload only needed files (NOT entire repo)
       - name: Upload artifact
