@@ -64,7 +64,8 @@ export default function MentorSidebar({
 
       {/* Sidebar - Desktop Always Visible, Mobile in Overlay */}
       <div
-        className={`fixed md:sticky left-0 md:top-0 md:h-screen w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-6 z-40 transform transition-transform md:overflow-y-auto ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+
+        className={`fixed md:sticky left-0 md:top-0 md:h-screen w-[85vw] max-w-72 md:w-64 bg-slate-900 border-r border-slate-800 p-5 sm:p-6 z-40 transform transition-transform md:overflow-y-auto overflow-y-auto ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
       >
         {/* Logo */}
@@ -135,7 +136,8 @@ export default function MentorSidebar({
         </nav>
 
         {/* Mentor Info - Bottom */}
-        <div className="md:absolute md:bottom-6 left-6 right-6 space-y-4 mt-8 md:mt-0 pb-4 md:pb-0">
+
+        <div className="mt-8 md:absolute md:bottom-6 left-6 right-6 space-y-4 pb-4 md:pb-0">
           <button
             onClick={() => {
               onNavigate("/mentor-dashboard?tab=profile");
