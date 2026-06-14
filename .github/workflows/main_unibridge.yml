@@ -27,27 +27,24 @@ jobs:
         with:
           node-version: "22.x"
           cache: "pnpm"
-          cache-dependency-path: unibridge-main/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: unibridge-main
         run: pnpm install --frozen-lockfile
         env:
           PNPM_MINIMUM_RELEASE_AGE: "0"
 
       - name: Run tests
-        working-directory: unibridge-main
         run: pnpm test --if-present
 
       - name: Build project
-        working-directory: unibridge-main
         run: pnpm build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: unibridge-main/dist
+          path: dist
           if-no-files-found: error
 
   deploy:
