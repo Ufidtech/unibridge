@@ -10,17 +10,6 @@ function money(n) {
   return `₦${Number(n || 0).toFixed(2)}`;
 }
 
-function statusTone(status) {
-  const value = String(status || "pending").toLowerCase();
-  if (["approved", "completed", "processing"].includes(value)) {
-    return "bg-emerald-500/15 text-emerald-300 border-emerald-500/20";
-  }
-  if (["rejected", "failed", "cancelled"].includes(value)) {
-    return "bg-red-500/15 text-red-300 border-red-500/20";
-  }
-  return "bg-yellow-500/15 text-yellow-300 border-yellow-500/20";
-}
-
 export default function AdminPayoutDashboard({ onNavigate = () => {} }) {
   const [bookings, setBookings] = useState([]);
   const [payouts, setPayouts] = useState([]);
@@ -177,12 +166,6 @@ export default function AdminPayoutDashboard({ onNavigate = () => {} }) {
                   booking.sessionId || booking.id,
                 );
                 const payment = booking.payment || {};
-                const status =
-                  payout?.status ||
-                  booking.payoutStatus ||
-                  payment.status ||
-                  "pending";
-
                 return (
                   <div
                     key={booking.id}

@@ -202,7 +202,7 @@ export default function MenteeDashboard({
 
   // Fetch Mentors (AI Recommendations fallback to All Mentors)
   // Extracted loader so it can be called from an event handler when AI runs
-  async function loadMentorsData() {
+  const loadMentorsData = async () => {
     setLoadingMentors(true);
     setMentorsError(null);
 
@@ -220,37 +220,37 @@ export default function MenteeDashboard({
           const list = Array.isArray(data.mentors) ? data.mentors : [];
 
           if (list.length > 0) {
-            const uiList = list.map((m, i) => {
-              const mentorProfile = m.mentorProfile || m.profile || {};
-              return {
-                id: m.id || `m-${i}`,
-                name: m.name || m.fullName || "Unknown",
-                initials: m.name
-                  ? m.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((s) => s[0]?.toUpperCase())
-                      .join("")
-                  : "??",
-                university: m.university || "",
-                level: m.level || "",
-                bio: m.bio || "",
-                skills: m.skills || [],
-                rating: m.rating || 0,
-                reviews: m.reviews || 0,
-                mentorProfile,
-                mentorProfilePrice: mentorProfile.sessionPrice ?? null,
-                sessionPrice: normalizeMentorPrice({ ...m, mentorProfile }),
-
-                freemiumSplit: m.freemiumSplit || { free: true, premium: true },
-                bookingGoal: m.bookingGoal || m.goal || m.targetGoal || "",
-                aiQuestions: m.aiQuestions || m.suggestedQuestions || [],
-                aiPrepSheet: m.aiPrepSheet || null,
-              };
-            });
-
             const hydrated = await Promise.all(
-              uiList.map((m) => hydrateMentorPrice(m)),
+              list.map((m, i) => {
+                const mentorProfile = m.mentorProfile || m.profile || {};
+                return {
+                  id: m.id || `m-${i}`,
+                  name: m.name || m.fullName || "Unknown",
+                  initials: m.name
+                    ? m.name
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((s) => s[0]?.toUpperCase())
+                        .join("")
+                    : "??",
+                  university: m.university || "",
+                  level: m.level || "",
+                  bio: m.bio || "",
+                  skills: m.skills || [],
+                  rating: m.rating || 0,
+                  reviews: m.reviews || 0,
+                  mentorProfile,
+                  mentorProfilePrice: mentorProfile.sessionPrice ?? null,
+                  sessionPrice: normalizeMentorPrice({ ...m, mentorProfile }),
+                  freemiumSplit: m.freemiumSplit || {
+                    free: true,
+                    premium: true,
+                  },
+                  bookingGoal: m.bookingGoal || m.goal || m.targetGoal || "",
+                  aiQuestions: m.aiQuestions || m.suggestedQuestions || [],
+                  aiPrepSheet: m.aiPrepSheet || null,
+                };
+              }),
             );
             setMentors(hydrated);
             return; // Successfully loaded recommendations, exit early
@@ -318,7 +318,7 @@ export default function MenteeDashboard({
     } finally {
       setLoadingMentors(false);
     }
-  }
+  };
 
   // Load on mount and when userInfo changes
   useEffect(() => {
@@ -379,7 +379,9 @@ export default function MenteeDashboard({
     }
 
     loadWalletData();
-    loadMentorsData();
+    void (async () => {
+      await loadMentorsData();
+    })();
 
     // When AICommandCenter dispatches mentors directly, update without refetching.
     const doneHandler = (ev) => {
@@ -407,13 +409,13 @@ export default function MenteeDashboard({
               mentorProfile,
               mentorProfilePrice: mentorProfile.sessionPrice ?? null,
               sessionPrice: normalizeMentorPrice({ ...m, mentorProfile }),
-
               freemiumSplit: m.freemiumSplit || { free: true, premium: true },
               bookingGoal: m.bookingGoal || m.goal || m.targetGoal || "",
               aiQuestions: m.aiQuestions || m.suggestedQuestions || [],
               aiPrepSheet: m.aiPrepSheet || null,
             };
           });
+          void uiList;
         } else {
           // If empty, fall back to a full reload
           loadMentorsData();
@@ -556,7 +558,7 @@ export default function MenteeDashboard({
                   try {
                     await navigator.clipboard.writeText(requestFundsLink);
                     toast.success("Request funds link copied");
-                  } catch (e) {
+                  } catch {
                     toast.error("Could not copy share link");
                   }
                 }}

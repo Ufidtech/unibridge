@@ -216,8 +216,6 @@ export default function App() {
   });
 
   useEffect(() => {
-    const savedPage = localStorage.getItem("currentPage");
-
     const idToken = localStorage.getItem("idToken");
     if (idToken) {
       fetchMe()

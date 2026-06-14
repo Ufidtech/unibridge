@@ -84,7 +84,7 @@ export function toISODateTime({
  * +01:00
  * -05:00
  */
-function getLocalTimezoneOffset(date = new Date()) {
+export function getLocalTimezoneOffset(date = new Date()) {
   const offsetMinutes = -date.getTimezoneOffset();
 
   const sign = offsetMinutes >= 0 ? "+" : "-";

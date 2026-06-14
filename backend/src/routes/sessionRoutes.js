@@ -7,6 +7,10 @@ import { createCalendarEvent, sendEmail, updateCalendarEvent } from "../lib/cale
 
 const router = Router();
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
 
 const SESSION_DURATION_MINUTES = Number(
   process.env.SESSION_DURATION_MINUTES || 60,
@@ -508,9 +512,8 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
 
     if (body.privateBooking) {
       try {
-        const serviceBase = (process.env.API_BASE_URL || process.env.APP_BASE_URL || "").replace(/\/+$/, "");
-
         await firestore.collection("privateBookingRequests").doc(sessionRef.id).set({
+
           sessionId: sessionRef.id,
           mentorId: body.mentorId,
           menteeId: req.user.uid,

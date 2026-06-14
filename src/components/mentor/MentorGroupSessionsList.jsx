@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import {
@@ -19,7 +19,11 @@ export default function MentorGroupSessionsList() {
   const [editingSession, setEditingSession] = useState(null);
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
-  const [completeData, setCompleteData] = useState({ proof: "", notes: "", sessionId: null });
+  const [completeData, setCompleteData] = useState({
+    proof: "",
+    notes: "",
+    sessionId: null,
+  });
 
   const [showUsersModal, setShowUsersModal] = useState(false);
 
@@ -107,7 +111,7 @@ export default function MentorGroupSessionsList() {
   async function submitComplete() {
     try {
       const { sessionId, proof, notes } = completeData;
-  await completeMentorSession(sessionId, proof, notes);
+      await completeMentorSession(sessionId, proof, notes);
       toast.success("Session marked complete");
       setShowCompleteModal(false);
       await loadSessions();
@@ -214,39 +218,38 @@ text-slate-400
             key={session.id}
             className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between"
           >
-          {/* Top */}
-
-          <div
-            className="
+            {/* Top */}
+            <div
+              className="
 flex
 justify-between
 items-start
 "
-          >
-            <div>
-              <h2
-                className="
+            >
+              <div>
+                <h2
+                  className="
 text-xl
 font-bold
 text-white
 "
-              >
-                {session.topic}
-              </h2>
+                >
+                  {session.topic}
+                </h2>
 
-              <p
-                className="
+                <p
+                  className="
 text-slate-400
 text-sm
 mt-1
 "
-              >
-                {session.notes || "No description"}
-              </p>
-            </div>
+                >
+                  {session.notes || "No description"}
+                </p>
+              </div>
 
-            <span
-              className={`
+              <span
+                className={`
 px-3
 py-1
 rounded-full
@@ -259,120 +262,116 @@ ${
     : "bg-red-900 text-red-300"
 }
 `}
-            >
-              {session.status}
-            </span>
-          </div>
-
-          {/* Details */}
-
-          <div
-            className="
+              >
+                {session.status}
+              </span>
+            </div>
+            {/* Details */}
+            <div
+              className="
 grid
 grid-cols-2
 gap-5
 mt-6
 "
-          >
-            <div>
-              <div
-                className="
+            >
+              <div>
+                <div
+                  className="
 text-xs
 uppercase
 text-slate-500
 "
-              >
-                Session Date
+                >
+                  Session Date
+                </div>
+
+                <div className="text-white">{session.sessionDate}</div>
               </div>
 
-              <div className="text-white">{session.sessionDate}</div>
-            </div>
-
-            <div>
-              <div
-                className="
+              <div>
+                <div
+                  className="
 text-xs
 uppercase
 text-slate-500
 "
-              >
-                Session Time
+                >
+                  Session Time
+                </div>
+
+                <div className="text-white">{session.sessionTime}</div>
               </div>
 
-              <div className="text-white">{session.sessionTime}</div>
-            </div>
-
-            <div>
-              <div
-                className="
+              <div>
+                <div
+                  className="
 text-xs
 uppercase
 text-slate-500
 "
-              >
-                Mentor
+                >
+                  Mentor
+                </div>
+
+                <div className="text-white">{session.mentor?.name}</div>
               </div>
 
-              <div className="text-white">{session.mentor?.name}</div>
-            </div>
-
-            <div>
-              <div
-                className="
+              <div>
+                <div
+                  className="
 text-xs
 uppercase
 text-slate-500
 "
-              >
-                Meeting Provider
-              </div>
+                >
+                  Meeting Provider
+                </div>
 
-              <div className="text-white">
-                {session.meetingProvider === "GOOGLE_MEET"
-                  ? "Google Meet"
-                  : "Temporary Room"}
+                <div className="text-white">
+                  {session.meetingProvider === "GOOGLE_MEET"
+                    ? "Google Meet"
+                    : "Temporary Room"}
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Registered */}
-
-          <div
-            className="
+            {/* Registered */}
+            <div
+              className="
 mt-6
 flex
 justify-between
 items-center
 "
-          >
-            <div>
-              <div
-                className="
+            >
+              <div>
+                <div
+                  className="
 text-xs
 uppercase
 text-slate-500
 "
-              >
-                Registered Mentees
+                >
+                  Registered Mentees
+                </div>
+
+                <div className="text-white">
+                  {session.registeredMentees?.length || 0}
+
+                  {" / "}
+
+                  {session.maxParticipants}
+                </div>
               </div>
 
-              <div className="text-white">
-                {session.registeredMentees?.length || 0}
+              {session.registeredMentees?.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSelectedSessionUsers(session.registeredMentees);
 
-                {" / "}
-
-                {session.maxParticipants}
-              </div>
-            </div>
-
-            {session.registeredMentees?.length > 0 && (
-              <button
-                onClick={() => {
-                  setSelectedSessionUsers(session.registeredMentees);
-
-                  setShowUsersModal(true);
-                }}
-                className="
+                    setShowUsersModal(true);
+                  }}
+                  className="
 bg-slate-800
 hover:bg-slate-700
 px-4
@@ -381,64 +380,62 @@ rounded-lg
 text-white
 cursor-pointer
 "
+                >
+                  View Users
+                </button>
+              )}
+            </div>
+            {/* Actions */}
+            gap-3
+            <div className="flex gap-2 mt-6 flex-wrap justify-end">
+              <button
+                onClick={() => sendReminder(session.id)}
+                disabled={sendingReminder[session.id]}
+                className="bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
               >
-                View Users
+                {sendingReminder[session.id] ? "Sending..." : "Send Reminder"}
               </button>
-            )}
-          </div>
 
-          {/* Actions */}
+              {session.meetLink && (
+                <a
+                  href={session.meetLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
+                >
+                  Join Session
+                </a>
+              )}
 
-gap-3
-          <div className="flex gap-2 mt-6 flex-wrap justify-end">
-            <button
-              onClick={() => sendReminder(session.id)}
-              disabled={sendingReminder[session.id]}
-              className="bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
-            >
-              {sendingReminder[session.id] ? "Sending..." : "Send Reminder"}
-            </button>
-
-            {session.meetLink && (
-              <a
-                href={session.meetLink}
-                target="_blank"
-                rel="noreferrer"
-                className="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
+              {/* Edit / Delete / Complete actions */}
+              <button
+                onClick={() => openEdit(session)}
+                className="bg-yellow-600 hover:bg-yellow-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
               >
-                Join Session
-              </a>
-            )}
+                Edit
+              </button>
 
-            {/* Edit / Delete / Complete actions */}
-            <button
-              onClick={() => openEdit(session)}
-              className="bg-yellow-600 hover:bg-yellow-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
-            >
-              Edit
-            </button>
+              <button
+                onClick={() => handleDelete(session.id)}
+                className="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
+              >
+                Delete
+              </button>
 
-            <button
-              onClick={() => handleDelete(session.id)}
-              className="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
-            >
-              Delete
-            </button>
-
-            <button
-              onClick={() => openComplete(session)}
-              className="bg-green-700 hover:bg-green-600 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
-            >
-              Complete
-            </button>
-          </div>
+              <button
+                onClick={() => openComplete(session)}
+                className="bg-green-700 hover:bg-green-600 px-3 py-1.5 rounded-md text-white cursor-pointer text-sm"
+              >
+                Complete
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
       {/* Users Modal */}
 
-  {showUsersModal && (
+      {showUsersModal && (
         <div
           className="
 fixed
@@ -507,23 +504,21 @@ space-y-4
 "
             >
               {selectedSessionUsers.map((user, index) => (
-  <div
-    key={user.id || index}
-    className="
+                <div
+                  key={user.id || index}
+                  className="
     bg-slate-800
     rounded-xl
     p-5
     border
     border-slate-700
     "
-  >
+                >
+                  {/* User Header */}
 
-    {/* User Header */}
-
-    <div className="flex items-center gap-4 mb-6">
-
-      <div
-        className="
+                  <div className="flex items-center gap-4 mb-6">
+                    <div
+                      className="
         w-14
         h-14
         rounded-full
@@ -535,155 +530,135 @@ space-y-4
         font-bold
         text-lg
         "
-      >
-        {user.name?.charAt(0)?.toUpperCase() || "U"}
-      </div>
+                    >
+                      {user.name?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
 
-      <div>
+                    <div>
+                      <div className="text-lg font-bold text-white">
+                        {user.name || "Unknown User"}
+                      </div>
 
-        <div className="text-lg font-bold text-white">
-          {user.name || "Unknown User"}
-        </div>
+                      <div className="text-slate-400 text-sm">
+                        Registered Mentee
+                      </div>
+                    </div>
+                  </div>
 
-        <div className="text-slate-400 text-sm">
-          Registered Mentee
-        </div>
+                  {/* User Details */}
 
-      </div>
-
-    </div>
-
-
-    {/* User Details */}
-
-    <div
-      className="
+                  <div
+                    className="
       grid
       grid-cols-1
       md:grid-cols-2
       gap-5
       "
-    >
+                  >
+                    {/* Email */}
 
-      {/* Email */}
-
-      {user.email && (
-
-        <div>
-
-          <div className="
+                    {user.email && (
+                      <div>
+                        <div
+                          className="
           text-xs
           uppercase
           text-slate-500
-          ">
-            Email Address
-          </div>
+          "
+                        >
+                          Email Address
+                        </div>
 
-          <div className="
+                        <div
+                          className="
           text-white
           break-all
-          ">
-            {user.email}
-          </div>
+          "
+                        >
+                          {user.email}
+                        </div>
+                      </div>
+                    )}
 
-        </div>
+                    {/* Edit/Create Modal (reuses GroupSessionCreate) */}
+                    {/* Users Modal content (no nested edit/complete modals) */}
 
-      )}
+                    {/* Phone */}
 
-      {/* Edit/Create Modal (reuses GroupSessionCreate) */}
-      {/* Users Modal content (no nested edit/complete modals) */}
+                    {user.phone && (
+                      <div>
+                        <div className="text-xs uppercase text-slate-500">
+                          Phone Number
+                        </div>
 
+                        <div className="text-white">{user.phone}</div>
+                      </div>
+                    )}
 
-      {/* Phone */}
+                    {/* University */}
 
-      {user.phone && (
+                    {user.university && (
+                      <div>
+                        <div className="text-xs uppercase text-slate-500">
+                          University
+                        </div>
 
-        <div>
+                        <div className="text-white">{user.university}</div>
+                      </div>
+                    )}
 
-          <div className="text-xs uppercase text-slate-500">Phone Number</div>
+                    {/* Department */}
 
-          <div className="text-white">{user.phone}</div>
-          
-        </div>
+                    {user.department && (
+                      <div>
+                        <div className="text-xs uppercase text-slate-500">
+                          Department
+                        </div>
 
-      )}
+                        <div className="text-white">{user.department}</div>
+                      </div>
+                    )}
 
+                    {/* Level */}
 
-      {/* University */}
+                    {user.level && (
+                      <div>
+                        <div className="text-xs uppercase text-slate-500">
+                          Level
+                        </div>
 
-      {user.university && (
+                        <div className="text-white">{user.level}</div>
+                      </div>
+                    )}
 
-        <div>
+                    {/* Bio */}
 
-          <div className="text-xs uppercase text-slate-500">University</div>
+                    {user.bio && (
+                      <div className="md:col-span-2">
+                        <div className="ext-xs uppercase text-slate-500">
+                          Bio
+                        </div>
 
-          <div className="text-white">{user.university}</div>
+                        <div className="text-white">{user.bio}</div>
+                      </div>
+                    )}
 
-        </div>
+                    {/* Registration Date */}
 
-      )}
+                    {user.registeredAt && (
+                      <div className="md:col-span-2">
+                        <div className="text-xs uppercase text-slate-500">
+                          Registration Date
+                        </div>
 
-
-      {/* Department */}
-
-      {user.department && (
-
-        <div>
-
-          <div className="text-xs uppercase text-slate-500">Department</div>
-
-          <div className="text-white">{user.department}</div>
-        </div>
-
-      )}
-
-
-      {/* Level */}
-
-      {user.level && (
-
-        <div>
-
-          <div className="text-xs uppercase text-slate-500">Level</div>
-
-          <div className="text-white">{user.level}</div>
-
-        </div>
-
-      )}
-
-
-      {/* Bio */}
-
-      {user.bio && (
-         <div className="md:col-span-2">
-
-          <div className="ext-xs uppercase text-slate-500">Bio</div>
-
-          <div className="text-white">{user.bio}</div>
-
-        </div>
-    )}
-
-
-      {/* Registration Date */}
-
-      {user.registeredAt && (
-
-        <div className="md:col-span-2">
-
-          <div className="text-xs uppercase text-slate-500">Registration Date</div>
-          
-          <div className="text-white">{new Date(user.registeredAt).toLocaleString()}</div>
-
-        </div>
-
-      )}
-
-    </div>
-
-  </div>
-))}
+                        <div className="text-white">
+                          {new Date(user.registeredAt).toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -716,7 +691,10 @@ overflow-y-auto
 "
           >
             <button
-              onClick={() => { setShowModal(false); setEditingSession(null); }}
+              onClick={() => {
+                setShowModal(false);
+                setEditingSession(null);
+              }}
               className="
 absolute
 top-4
@@ -756,14 +734,20 @@ cursor-pointer
               ✕
             </button>
 
-            <h3 className="text-lg font-bold text-white mb-3">Complete Session</h3>
+            <h3 className="text-lg font-bold text-white mb-3">
+              Complete Session
+            </h3>
 
             <div className="mb-3">
-              <label className="block text-sm text-slate-300">Proof (URL)</label>
+              <label className="block text-sm text-slate-300">
+                Proof (URL)
+              </label>
               <input
                 type="text"
                 value={completeData.proof}
-                onChange={(e) => setCompleteData((p) => ({ ...p, proof: e.target.value }))}
+                onChange={(e) =>
+                  setCompleteData((p) => ({ ...p, proof: e.target.value }))
+                }
                 className="w-full p-2 rounded bg-slate-800 text-white"
               />
             </div>
@@ -772,7 +756,9 @@ cursor-pointer
               <label className="block text-sm text-slate-300">Notes</label>
               <textarea
                 value={completeData.notes}
-                onChange={(e) => setCompleteData((p) => ({ ...p, notes: e.target.value }))}
+                onChange={(e) =>
+                  setCompleteData((p) => ({ ...p, notes: e.target.value }))
+                }
                 className="w-full p-2 rounded bg-slate-800 text-white"
               />
             </div>
@@ -801,19 +787,30 @@ cursor-pointer
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-60">
           <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 relative shadow-2xl">
             <button
-              onClick={() => { setShowDeleteModal(false); setDeleteSessionId(null); }}
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteSessionId(null);
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 text-xl font-bold cursor-pointer transition"
             >
               ✕
             </button>
 
-            <h3 className="text-lg font-bold text-white mb-2">Confirm Delete</h3>
+            <h3 className="text-lg font-bold text-white mb-2">
+              Confirm Delete
+            </h3>
 
-            <p className="text-slate-300 mb-4">Are you sure you want to cancel this session? This action cannot be undone.</p>
+            <p className="text-slate-300 mb-4">
+              Are you sure you want to cancel this session? This action cannot
+              be undone.
+            </p>
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => { setShowDeleteModal(false); setDeleteSessionId(null); }}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteSessionId(null);
+                }}
                 className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-white"
               >
                 Cancel

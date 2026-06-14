@@ -31,7 +31,7 @@ export function initFirebase() {
       'Example keys start with "AIza". After updating, restart the dev server.',
     ].join(' ');
     // Log to console for easier browser debugging, then throw so init fails visibly.
-    // eslint-disable-next-line no-console
+     
     console.error(msg);
     throw new Error(msg);
   }

@@ -25,7 +25,7 @@ export default function WalletFundModal({
       await navigator.clipboard.writeText(shareLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch (e) {
+    } catch {
       setCopied(false);
     }
   };

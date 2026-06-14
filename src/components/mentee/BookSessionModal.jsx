@@ -76,7 +76,7 @@ export default function BookSessionModal({
         setSelectedDateTime(Number.isNaN(dt.getTime()) ? null : dt);
         setSelectedDate(initialDate);
         setSelectedTime(initialTime.slice(0, 5));
-      } catch (e) {
+      } catch {
         setSelectedDateTime(null);
       }
     }
@@ -85,7 +85,7 @@ export default function BookSessionModal({
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       setTimezone(tz);
-    } catch (e) {
+    } catch {
       setTimezone("UTC");
     }
   }, [initialDate, initialTime]);

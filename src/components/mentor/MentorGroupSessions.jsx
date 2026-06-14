@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-  fetchMentorSessions,
-  createGroupSession,
-} from "../../lib/api/sessions";
+import { fetchMentorSessions } from "../../lib/api/sessions";
 import GroupSessionCreate from "./GroupSessionCreate";
-import toast from "react-hot-toast";
 
 export default function MentorGroupSessions() {
   const [groupSessions, setGroupSessions] = useState([]);
@@ -31,32 +27,6 @@ export default function MentorGroupSessions() {
   useEffect(() => {
     loadGroupSessions();
   }, []);
-
-  async function handleCreateSession(groupForm) {
-    try {
-      const sessionDateTime = new Date(groupForm.datetime);
-      const sessionDate = `${sessionDateTime.getFullYear()}-${String(sessionDateTime.getMonth() + 1).padStart(2, "0")}-${String(sessionDateTime.getDate()).padStart(2, "0")}`;
-      const sessionTime = `${String(sessionDateTime.getHours()).padStart(2, "0")}:${String(sessionDateTime.getMinutes()).padStart(2, "0")}`;
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      await createGroupSession({
-        topic: groupForm.title.trim(),
-        notes: groupForm.description.trim(),
-        sessionDate,
-        sessionTime,
-        timezone,
-        maxParticipants: Number(groupForm.capacity) || 50,
-      });
-
-      toast.success("Session created successfully");
-
-      setShowGroupCreate(false);
-
-      await loadGroupSessions();
-    } catch (err) {
-      toast.error(err.message || "Failed to create session");
-    }
-  }
 
   return (
     <div className="space-y-6">

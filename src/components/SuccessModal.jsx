@@ -125,7 +125,7 @@ export default function SuccessModal({
       const d = new Date(sessionDetails.date);
       if (Number.isNaN(d.getTime())) return sessionDetails.date;
       return d.toLocaleDateString();
-    } catch (e) {
+    } catch {
       return sessionDetails.date || "";
     }
   })();
@@ -138,8 +138,8 @@ export default function SuccessModal({
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 3000);
       }
-    } catch (e) {
-      console.error("Copy failed", e);
+    } catch (error) {
+      console.error("Copy failed", error);
     }
   };
 

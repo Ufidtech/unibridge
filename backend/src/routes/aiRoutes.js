@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { generateMentorResponse, recommendMentors, generateMentorResponseForSession, generateMenteePrepSheet } from '../services/mentorAi.js';
+import { recommendMentors, generateMentorResponseForSession, generateMenteePrepSheet } from '../services/mentorAi.js';
 
 const router = Router();
 
-router.post('/mentor-response', async (req, res, next) => {
+router.post('/mentor-response', async (req, res) => {
   try {
     const { prompt, sessionId } = req.body ?? {};
 
@@ -22,7 +22,7 @@ router.post('/mentor-response', async (req, res, next) => {
   }
 });
 
-router.post('/recommend-mentors', async (req, res, next) => {
+router.post('/recommend-mentors', async (req, res) => {
   try {
     const { menteeId, limit } = req.body ?? {};
     if (!menteeId) return res.status(400).json({ error: 'menteeId is required' });
@@ -45,11 +45,11 @@ router.post('/recommend-mentors', async (req, res, next) => {
     }));
     return res.json({ mentors: out });
   } catch (error) {
-    return next(error);
+    return res.status(500).json({ message: error.message || 'AI error' });
   }
 });
 
-router.post('/generate-prep-sheet', async (req, res, next) => {
+router.post('/generate-prep-sheet', async (req, res) => {
   try {
     const { studentInput } = req.body ?? {};
     const normalizedStudentInput = typeof studentInput === 'string' ? studentInput.trim() : '';

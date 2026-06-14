@@ -135,10 +135,8 @@ if (realApp) {
           store.set(id, { ...data, createdAt: data.createdAt ?? now });
           return { id };
         },
-        async doc(id) {
-          const docId = id || makeId();
-          return this.doc(docId);
-        },
+
+
         // Return a query-like object that supports chained where() calls and orderBy().get()
         where(field, op, value) {
           const filters = [{ field, op, value }];
@@ -148,7 +146,8 @@ if (realApp) {
               filtersArr.push({ field: nextField, op: nextOp, value: nextValue });
               return this;
             },
-            orderBy(orderField, orderDir) {
+            orderBy(orderField) {
+              void orderField;
               return {
                 async get() {
                   const all = Array.from(store.entries()).map(([id, data]) => ({ id, data }));
@@ -182,7 +181,8 @@ if (realApp) {
 
           return makeQuery(filters);
         },
-        orderBy(field, dir) {
+        orderBy(field) {
+          void field;
           const all = Array.from(store.entries()).map(([id, data]) => ({ id, data }));
           // naive ordering by stringified field
           all.sort((a, b) => ((a.data[field] || '') > (b.data[field] || '') ? -1 : 1));

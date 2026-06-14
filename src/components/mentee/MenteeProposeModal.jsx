@@ -34,7 +34,7 @@ export default function MenteeProposeModal({
         setDateTime(null);
       }
     }
-  }, []);
+  }, [initialDate, initialTime]);
 
   if (!open) return null;
 

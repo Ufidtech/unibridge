@@ -97,7 +97,7 @@ export default function MenteeAuthOnboarding({
     };
 
     registerMentee(payload)
-      .then(({ user, alreadyExisted }) => {
+      .then(({ user }) => {
         try {
           if (user) {
             localStorage.setItem("menteeData", JSON.stringify(user));
