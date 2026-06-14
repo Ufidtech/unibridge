@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -202,7 +202,7 @@ export default function MenteeDashboard({
 
   // Fetch Mentors (AI Recommendations fallback to All Mentors)
   // Extracted loader so it can be called from an event handler when AI runs
-  const loadMentorsData = async () => {
+  const loadMentorsData = useCallback(async () => {
     setLoadingMentors(true);
     setMentorsError(null);
 
@@ -318,7 +318,7 @@ export default function MenteeDashboard({
     } finally {
       setLoadingMentors(false);
     }
-  };
+  }, [menteeId]);
 
   // Load on mount and when userInfo changes
   useEffect(() => {
@@ -439,7 +439,7 @@ export default function MenteeDashboard({
       }
       cancelled = true;
     };
-  }, [menteeId]);
+  }, [menteeId, loadMentorsData]);
 
   const universitySuggestions = Array.from(
     new Set([

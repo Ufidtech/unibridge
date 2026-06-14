@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import MentorSidebar from "./MentorSidebar";
@@ -198,19 +198,17 @@ export default function MentorDashboard({
     }
   };
 
-  async function loadSessions() {
+  const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
     setSessionsError(null);
     try {
       const data = await fetchSessions();
       console.log("DEBUG: fetchSessions response:", data);
 
-      // Support both shapes: { sessionRequests: [...] } or an array returned directly
       const allRequests = Array.isArray(data)
         ? data
         : data?.sessionRequests || [];
 
-      // Save the full list so request tab can show all items regardless of status
       setAllRequestsState(allRequests);
 
       const requests = allRequests.filter((s) => s.status === "PENDING");
@@ -290,9 +288,9 @@ export default function MentorDashboard({
     } finally {
       setLoadingSessions(false);
     }
-  }
+  }, [mentorInfo]);
 
-  async function loadMentorProfile() {
+  const loadMentorProfile = useCallback(async () => {
     setLoadingProfile(true);
     try {
       const data = await fetchMe();
@@ -325,16 +323,16 @@ export default function MentorDashboard({
     } finally {
       setLoadingProfile(false);
     }
-  }
+  }, []);
 
-  async function loadPayoutHistory() {
+  const loadPayoutHistory = useCallback(async () => {
     try {
       const data = await fetchMentorPayoutHistory();
       setPayoutHistory(data.payouts || []);
     } catch {
       setPayoutHistory([]);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadSessions();
