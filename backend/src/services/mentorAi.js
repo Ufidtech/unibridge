@@ -271,26 +271,60 @@ export async function generateMentorResponseForSession({ sessionId, prompt }) {
 }
 
 
+function fallbackPrepSheet(studentInput) {
+  const cleanInput = String(studentInput || '').trim();
+  return [
+    '### Mentee Profile',
+    '',
+    cleanInput
+      ? `You shared: ${cleanInput}`
+      : 'You shared a goal, but the AI provider could not process it.',
+    '',
+    '### Core Concern',
+    '',
+    cleanInput
+      ? 'The main concern is being shaped from what you shared.'
+      : 'The AI provider is temporarily unavailable, so this fallback uses the information you entered.',
+    '',
+    '### The 3-Point Agenda',
+    '',
+    '1. Clarify your goal and what success looks like.',
+    '2. Identify the biggest blocker or uncertainty.',
+    '3. Agree on the next step you can take after the session.',
+  ].join('\n');
+}
+
+
 export async function generateMenteePrepSheet(studentInput) {
-  if (!genAI) throw new Error("Gemini API key is missing");
+  if (!studentInput || !String(studentInput).trim()) {
+    throw new Error('studentInput is required');
+  }
+
+  if (!genAI) return fallbackPrepSheet(studentInput);
 
   // The Unibridge Intake Agent System Prompt
   const systemPrompt = `
-You are the Unibridge Intake Agent, an empathetic but highly structured AI assistant for secondary school students in Nigeria. 
+You are the Unibridge Intake Agent, an empathetic but highly structured AI assistant for secondary school students in Nigeria.
 
-Your Goal: A student will provide a vague, unstructured anxiety or goal about entering university (e.g., JAMB, Post-UTME, or tech skills). You must translate their raw thoughts into a professional, highly structured "Mentor Prep Sheet" for a University Undergraduate mentor.
+Your Goal: A student will provide a vague, unstructured anxiety or goal about entering university (e.g., JAMB, Post-UTME, or tech skills). Translate their raw thoughts into a concise, mentee-facing session summary for mentor review.
 
 Output format: Return STRICTLY formatted Markdown with the following sections:
-- **Mentee Profile:** (A one-sentence summary of who they are and what they want).
-- **Core Anxiety:** (What is actually stressing them out).
-- **The 3-Point Agenda:** (Exactly 3 actionable, focused questions or topics the mentor should cover in their 30-minute call).
+- **Mentee Profile:** A short, personalized description of the student and what they want.
+- **Core Concern:** A clear, plain-language summary of the student's main challenge.
+- **The 3-Point Agenda:** Exactly 3 actionable, focused questions or topics the mentor should cover in their 30-minute call.
 
-Tone: Professional, clear, and highly respectful of the mentor's time.
+Tone: Professional, clear, and supportive.
 
 STUDENT INPUT: "${studentInput}"
   `;
 
+
   const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-  const result = await model.generateContent(systemPrompt);
-  return result.response.text();
+  try {
+    const result = await safeGenerate(model, systemPrompt);
+    return result.response.text();
+  } catch (error) {
+    console.error('Prep sheet fallback due to AI error:', error?.message || error);
+    return fallbackPrepSheet(studentInput);
+  }
 }

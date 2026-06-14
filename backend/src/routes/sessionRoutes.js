@@ -73,7 +73,8 @@ async function parseSessionISO(sessionDate, sessionTime, timezone = "UTC") {
     const formattedTime =
       sessionTime.length === 5 ? `${sessionTime}:00` : sessionTime;
 
-    const startDate = new Date(`${sessionDate}T${formattedTime}Z`);
+    const startDate = new Date(`${sessionDate}T${formattedTime}`);
+
 
     if (isNaN(startDate.getTime())) {
       return null;
@@ -104,6 +105,98 @@ function mapSessionDoc(doc) {
     ...data,
   };
 }
+
+async function getOrCreateWallet(userId) {
+  const walletRef = firestore.collection('wallets').doc(userId);
+  const walletDoc = await walletRef.get();
+
+  if (walletDoc.exists) {
+    const wallet = walletDoc.data() || {};
+    return {
+      walletRef,
+      wallet: {
+        userId,
+        currentBalance: Number(wallet.currentBalance || 0),
+        escrowBalance: Number(wallet.escrowBalance || 0),
+        transactionHistory: Array.isArray(wallet.transactionHistory) ? wallet.transactionHistory : [],
+        requestLinks: Array.isArray(wallet.requestLinks) ? wallet.requestLinks : [],
+        updatedAt: wallet.updatedAt || null,
+      },
+    };
+  }
+
+  const wallet = {
+    userId,
+    currentBalance: 0,
+    escrowBalance: 0,
+    transactionHistory: [],
+    requestLinks: [],
+    updatedAt: nowIso(),
+  };
+
+  await walletRef.set(wallet);
+  return { walletRef, wallet };
+}
+
+function normalizeAmount(value) {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) ? Number(amount.toFixed(2)) : 0;
+}
+
+function buildWalletTransaction({ userId, sessionId, type, amount, description, status = 'completed', metadata = {} }) {
+  return {
+    id: `${type}-${sessionId || Date.now()}-${Date.now()}`,
+    userId,
+    sessionId: sessionId || null,
+    type,
+    amount: normalizeAmount(amount),
+    currency: 'NGN',
+    description,
+    status,
+    metadata,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+}
+
+async function applyWalletTransaction({
+  userId,
+  sessionId,
+  type,
+  amount,
+  description,
+  deltaCurrent = 0,
+  deltaEscrow = 0,
+  status = 'completed',
+  metadata = {},
+}) {
+  const { walletRef, wallet } = await getOrCreateWallet(userId);
+  const nextCurrent = normalizeAmount(Number(wallet.currentBalance || 0) + Number(deltaCurrent || 0));
+  const nextEscrow = normalizeAmount(Number(wallet.escrowBalance || 0) + Number(deltaEscrow || 0));
+  const transaction = buildWalletTransaction({
+    userId,
+    sessionId,
+    type,
+    amount,
+    description,
+    status,
+    metadata,
+  });
+  const transactionHistory = [transaction, ...(wallet.transactionHistory || [])];
+
+  const updatedWallet = {
+    ...wallet,
+    currentBalance: nextCurrent,
+    escrowBalance: nextEscrow,
+    transactionHistory,
+    updatedAt: nowIso(),
+  };
+
+  await walletRef.set(updatedWallet, { merge: true });
+  await firestore.collection('walletTransactions').doc(transaction.id).set(transaction);
+  return { wallet: updatedWallet, transaction };
+}
+
 
 async function createCalendarForSession(session) {
   try {
@@ -226,7 +319,7 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
         notes: z.string().optional(),
         timezone: z.string().optional(),
         privateBooking: z.boolean().optional(),
-        bookingAmount: z.number().positive().optional(),
+        bookingAmount: z.number().nonnegative().optional(),
       })
       .parse(req.body);
 
@@ -273,12 +366,24 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
     // -------------------------
 
     const mentor = mentorDoc.data();
-    const mentorRate = Number(mentor.sessionPrice || mentor.price || 0);
-    const baseAmount = Number(body.bookingAmount || mentorRate || 0);
-    const menteeFee = Number((baseAmount * 0.1).toFixed(2));
-    const mentorFee = Number((baseAmount * 0.05).toFixed(2));
-    const menteeChargeTotal = Number((baseAmount + menteeFee).toFixed(2));
-    const mentorPayout = Number((baseAmount - mentorFee).toFixed(2));
+    const mentorRate = Number(mentor.sessionPrice ?? mentor.price ?? 0);
+    const sessionPrice = Number(body.bookingAmount ?? mentorRate ?? 0);
+    console.log("Session booking pricing debug:", {
+      mentorSessionPrice: mentor.sessionPrice,
+      mentorPrice: mentor.price,
+      bookingAmount: body.bookingAmount,
+      sessionPrice,
+      mentorId: body.mentorId,
+      menteeId: req.user.uid,
+    });
+
+    const baseAmount = normalizeAmount(body.bookingAmount ?? mentorRate ?? 0);
+
+    const menteeFee = normalizeAmount(baseAmount * 0.1);
+    const mentorFee = normalizeAmount(baseAmount * 0.05);
+    const menteeChargeTotal = normalizeAmount(baseAmount + menteeFee);
+    const mentorPayout = normalizeAmount(baseAmount - mentorFee);
+
 
     const menteeProfileDoc = await firestore
       .collection("menteeProfiles")
@@ -334,9 +439,11 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
         mentorFee,
         menteeChargeTotal,
         mentorPayout,
-        currency: "NGN",
-        status: body.privateBooking ? "awaiting_payment" : "not_required",
+        currency: 'NGN',
+        status: body.privateBooking ? 'awaiting_payment' : 'not_required',
+        walletStatus: 'pending_hold',
       },
+
 
       createdAt: now,
       updatedAt: now,
@@ -366,62 +473,57 @@ router.post("/", requireAuth, requireRole("MENTEE"), async (req, res, next) => {
       console.log("❌ Calendar event creation returned null");
     }
     // -------------------------
+    // WALLET HOLD ON BOOKING
+    // -------------------------
+
+    const menteeWallet = await getOrCreateWallet(req.user.uid);
+    const walletCurrentBalance = Number(menteeWallet.wallet.currentBalance || 0);
+
+    if (walletCurrentBalance < menteeChargeTotal) {
+      return res.status(400).json({
+        error: 'Insufficient wallet balance for this booking.',
+      });
+    }
+
+    await applyWalletTransaction({
+      userId: req.user.uid,
+      sessionId: sessionRef.id,
+      type: 'SESSION_HOLD',
+      amount: menteeChargeTotal,
+      description: `Held ₦${menteeChargeTotal.toFixed(2)} for session booking with ${mentor.name}`,
+      deltaCurrent: -menteeChargeTotal,
+      deltaEscrow: menteeChargeTotal,
+      metadata: {
+        mentorId: body.mentorId,
+        bookingType: 'PRIVATE_BOOKING',
+      },
+    });
+
+    // -------------------------
     // SAVE SESSION
     // -------------------------
 
     await sessionRef.set(sessionRequest);
 
+
     if (body.privateBooking) {
       try {
-        const serviceBase = process.env.API_BASE_URL || process.env.APP_BASE_URL || "";
-        const chargeResponse = await fetch(`${serviceBase}/api/pay/opay/create`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: req.headers.authorization || "",
-          },
-          body: JSON.stringify({
-            sessionId: sessionRef.id,
-            amount: menteeChargeTotal,
-            currency: "NGN",
-            bookingType: "PRIVATE_BOOKING",
-          }),
-        });
-
-        if (chargeResponse.ok) {
-          const chargeData = await chargeResponse.json();
-          sessionRequest.payment.paymentId = chargeData.paymentId;
-          sessionRequest.payment.checkoutUrl = chargeData.checkoutUrl;
-          sessionRequest.payment.paymentToken = chargeData.paymentToken;
-          sessionRequest.payment.status = "pending";
-          sessionRequest.payment.provider = "opay";
-          await sessionRef.set({ payment: sessionRequest.payment }, { merge: true });
-        }
+        const serviceBase = (process.env.API_BASE_URL || process.env.APP_BASE_URL || "").replace(/\/+$/, "");
 
         await firestore.collection("privateBookingRequests").doc(sessionRef.id).set({
           sessionId: sessionRef.id,
           mentorId: body.mentorId,
           menteeId: req.user.uid,
           status: "awaiting_payment",
-          payment: sessionRequest.payment,
           payoutStatus: "pending",
           createdAt: now,
           updatedAt: now,
         });
-      } catch (chargeErr) {
-        warn("Private booking payment bootstrap failed, continuing with stored session:", chargeErr?.message);
-        await firestore.collection("privateBookingRequests").doc(sessionRef.id).set({
-          sessionId: sessionRef.id,
-          mentorId: body.mentorId,
-          menteeId: req.user.uid,
-          status: "mock_payment_pending",
-          payment: sessionRequest.payment,
-          payoutStatus: "pending",
-          createdAt: now,
-          updatedAt: now,
-        });
+      } catch (err) {
+        return next(err);
       }
     }
+
 
     // -------------------------
     // SEND EMAILS
@@ -506,6 +608,26 @@ router.patch(
 
       log(`Session ${sessionId} updated to ${body.status}`);
 
+      let refundApplied = null;
+      if (body.status === 'DECLINED' || body.status === 'CANCELLED') {
+        const refundAmount = Number(session.payment?.menteeChargeTotal || session.payment?.baseAmount || 0);
+        const walletResult = await applyWalletTransaction({
+          userId: session.menteeId,
+          sessionId,
+          type: 'SESSION_REFUND',
+          amount: refundAmount,
+          description: `Refund for ${body.status.toLowerCase()} session with ${session.mentor?.name || 'mentor'}`,
+          deltaCurrent: refundAmount,
+          deltaEscrow: -refundAmount,
+          metadata: { mentorId: session.mentorId, previousStatus: session.status, newStatus: body.status },
+        });
+        refundApplied = walletResult.transaction;
+      }
+
+      if (body.status === 'CONFIRMED') {
+        await sessionRef.set({ payment: { ...(session.payment || {}), walletStatus: 'held' } }, { merge: true });
+      }
+
       await sendSessionEmails({
         to: session.mentee?.email,
         subject: `Session ${body.status}`,
@@ -519,7 +641,9 @@ router.patch(
           id: updatedDoc.id,
           ...updatedDoc.data(),
         },
+        refundApplied,
       });
+
     } catch (err) {
       errorLog("PATCH /status failed:", err);
 
@@ -1271,7 +1395,8 @@ router.patch(
               (targetProposal.sessionTime || '').length === 5
                 ? `${targetProposal.sessionTime}:00`
                 : targetProposal.sessionTime || '00:00:00';
-            const startDate = new Date(`${targetProposal.sessionDate}T${formattedTime}Z`);
+            const startDate = new Date(`${targetProposal.sessionDate}T${formattedTime}`);
+
             if (!isNaN(startDate.getTime())) {
               parsed = {
                 startISO: startDate.toISOString(),
@@ -1418,8 +1543,8 @@ router.post(
 
       const sessionRef =
         firestore
-        .collection("mentorSessions")
-        .doc(sessionId);
+          .collection("mentorSessions")
+          .doc(sessionId);
 
       const sessionDoc =
         await sessionRef.get();
@@ -1548,9 +1673,8 @@ Please join on time.
               ${session.mentor?.name || "Mentor"}
             </p>
 
-            ${
-              session.meetLink
-              ? `
+            ${session.meetLink
+            ? `
               <p>
                 <a
                   href="${session.meetLink}"
@@ -1566,8 +1690,8 @@ Please join on time.
                 </a>
               </p>
               `
-              : ""
-            }
+            : ""
+          }
 
           </div>
 

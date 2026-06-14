@@ -75,6 +75,20 @@ if (realApp) {
   const userClaims = new Map();
   let idCounter = 1;
 
+  function ensureWalletDoc(uid) {
+    const walletCollection = ensureCollection('wallets');
+    if (!walletCollection.has(uid)) {
+      walletCollection.set(uid, {
+        userId: uid,
+        currentBalance: 0,
+        transactionHistory: [],
+        requestLinks: [],
+        updatedAt: new Date().toISOString(),
+      });
+    }
+    return walletCollection.get(uid);
+  }
+
   function makeId() {
     return `mock-${Date.now()}-${idCounter++}`;
   }
@@ -120,6 +134,10 @@ if (realApp) {
           const now = new Date().toISOString();
           store.set(id, { ...data, createdAt: data.createdAt ?? now });
           return { id };
+        },
+        async doc(id) {
+          const docId = id || makeId();
+          return this.doc(docId);
         },
         // Return a query-like object that supports chained where() calls and orderBy().get()
         where(field, op, value) {
@@ -214,10 +232,12 @@ if (realApp) {
       usersByEmail.set(email, user);
       // also write to users collection for requireAuth lookups
       ensureCollection('users').set(uid, { uid, name: displayName, email, role: 'MENTEE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      ensureWalletDoc(uid);
       return user;
     },
     async setCustomUserClaims(uid, claims) {
       userClaims.set(uid, claims);
+      ensureWalletDoc(uid);
       return;
     },
     async verifyIdToken(token) {

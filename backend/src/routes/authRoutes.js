@@ -312,10 +312,15 @@ router.post("/register/mentee", async (req, res) => {
     const body = registerBaseSchema
       .extend({
         school: z.string().optional(),
+        university: z.string().optional(),
+        universityName: z.string().optional(),
         classLevel: z.string().optional(),
+        studentClass: z.string().optional(),
         dreamCourse: z.string().optional(),
+        selectedVibes: z.array(z.string()).optional(),
       })
       .parse(req.body);
+
 
     const email = body.email.toLowerCase().trim();
 
@@ -544,20 +549,20 @@ router.get("/me", requireAuth, async (req, res) => {
       .doc(req.user.uid)
       .get();
 
-      const profileData = profileDoc.exists
+    const profileData = profileDoc.exists
       ? profileDoc.data()
       : null;
 
     // Merge profile + rating safely
     const mergedProfile = profileData
       ? {
-          ...profileData,
+        ...profileData,
 
-          // Mentor rating fields
-          rating: Number(user.rating || 0),
-          reviews: Number(user.reviews || 0),
-          ratingCount: Number(user.ratingCount || 0),
-        }
+        // Mentor rating fields
+        rating: Number(user.rating || 0),
+        reviews: Number(user.reviews || 0),
+        ratingCount: Number(user.ratingCount || 0),
+      }
       : null;
 
 
@@ -591,6 +596,7 @@ router.patch("/me", requireAuth, async (req, res) => {
         universityAbbr: z.string().optional(),
 
         classLevel: z.string().optional(),
+        studentClass: z.string().optional(),
         level: z.string().optional(),
 
         dreamCourse: z.string().optional(),
@@ -606,6 +612,7 @@ router.patch("/me", requireAuth, async (req, res) => {
         selectedVibes: z.array(z.string()).optional(),
       })
       .parse(req.body);
+
 
     const userRef = firestore
       .collection("users")
@@ -665,6 +672,10 @@ router.patch("/me", requireAuth, async (req, res) => {
     if (body.classLevel !== undefined)
       profileUpdates.classLevel = body.classLevel;
 
+    if (body.studentClass !== undefined)
+      profileUpdates.studentClass = body.studentClass;
+
+
     if (body.level !== undefined)
       profileUpdates.level = body.level;
 
@@ -683,12 +694,18 @@ router.patch("/me", requireAuth, async (req, res) => {
     if (body.title !== undefined)
       profileUpdates.title = body.title;
 
-    if (body.sessionPrice !== undefined)
-      profileUpdates.sessionPrice = Number(body.sessionPrice || 0);
+
+
+    if (body.sessionPrice !== undefined) {
+      const normalizedSessionPrice = Number(body.sessionPrice);
+      profileUpdates.sessionPrice = Number.isFinite(normalizedSessionPrice)
+        ? normalizedSessionPrice
+        : 0;
+    }
 
     if (body.selectedVibes !== undefined)
-      profileUpdates.selectedVibes =
-        body.selectedVibes;
+      profileUpdates.selectedVibes = body.selectedVibes;
+
 
     if (Object.keys(profileUpdates).length > 0) {
       profileUpdates.updatedAt =
@@ -704,6 +721,27 @@ router.patch("/me", requireAuth, async (req, res) => {
           merge: true,
         });
       }
+
+      console.log("[auth/me] mentor profile saved:", {
+        userId: req.user.uid,
+        role: user.role,
+        profileCollection,
+        profileUpdates,
+      });
+
+
+      if (user.role === "MENTEE") {
+        await userRef.set(
+          {
+            ...profileUpdates,
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            merge: true,
+          },
+        );
+      }
+
     }
 
     const updatedUserDoc = await userRef.get();
@@ -717,9 +755,30 @@ router.patch("/me", requireAuth, async (req, res) => {
           ? "mentorProfile"
           : "menteeProfile"]:
           updatedProfileDoc.exists
-            ? updatedProfileDoc.data()
+            ? {
+              ...updatedProfileDoc.data(),
+              university:
+                updatedProfileDoc.data().university ||
+                updatedProfileDoc.data().universityName ||
+                updatedProfileDoc.data().school ||
+                null,
+              universityName:
+                updatedProfileDoc.data().universityName ||
+                updatedProfileDoc.data().university ||
+                updatedProfileDoc.data().school ||
+                null,
+              classLevel:
+                updatedProfileDoc.data().classLevel ||
+                updatedProfileDoc.data().studentClass ||
+                null,
+              studentClass:
+                updatedProfileDoc.data().studentClass ||
+                updatedProfileDoc.data().classLevel ||
+                null,
+            }
             : null,
       },
+
     });
   } catch (error) {
     return handleServerError(res, error, "/me PATCH");
@@ -793,7 +852,29 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
 
     const profileDoc = await profileRef.get();
 
+    const publicProfile = profileDoc.exists ? profileDoc.data() : null;
+    const normalizedProfile = publicProfile
+      ? {
+        ...publicProfile,
+        university:
+          publicProfile.university ||
+          publicProfile.universityName ||
+          publicProfile.school ||
+          null,
+        universityName:
+          publicProfile.universityName ||
+          publicProfile.university ||
+          publicProfile.school ||
+          null,
+        classLevel:
+          publicProfile.classLevel || publicProfile.studentClass || null,
+        studentClass:
+          publicProfile.studentClass || publicProfile.classLevel || null,
+      }
+      : null;
+
     // Build safe public response
+
     const publicUser = {
       uid: user.uid,
       name: user.name,
@@ -803,15 +884,12 @@ router.get("/users/:userId", requireAuth, async (req, res) => {
 
       ...(user.role === "MENTOR"
         ? {
-            mentorProfile: profileDoc.exists
-              ? profileDoc.data()
-              : null,
-          }
+          mentorProfile: normalizedProfile,
+        }
         : {
-            menteeProfile: profileDoc.exists
-              ? profileDoc.data()
-              : null,
-          }),
+          menteeProfile: normalizedProfile,
+        }),
+
     };
 
 

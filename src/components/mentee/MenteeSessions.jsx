@@ -13,6 +13,17 @@ import RateModal from "./RateModal";
 import BookSessionModal from "./BookSessionModal";
 import SuccessModal from "../SuccessModal";
 
+function normalizePrepSheet(aiPrepSheet) {
+  if (!aiPrepSheet) return null;
+  if (typeof aiPrepSheet === "string") {
+    return { summary: aiPrepSheet, sections: [] };
+  }
+  if (typeof aiPrepSheet === "object") {
+    return aiPrepSheet;
+  }
+  return null;
+}
+
 // Helper for date formatting
 const isoToDateTimeStrings = (iso, tz) => {
   if (!iso) return { date: "", time: "" };
@@ -132,6 +143,8 @@ export default function MenteeSessions({ onNavigate }) {
         time: res.sessionRequest.sessionTime,
         meetLink: res.sessionRequest.meetLink,
         aiPrepSheet: sessionData.aiPrepSheet || null,
+        bookingGoal: sessionData.goal || sessionData.topic || "",
+        aiQuestions: sessionData.aiQuestions || [],
       });
 
       setShowRescheduleModal(false);
@@ -191,8 +204,47 @@ export default function MenteeSessions({ onNavigate }) {
                 </div>
               </div>
 
-              {s.notes && (
-                <div className="mt-2 text-slate-400">Notes: {s.notes}</div>
+              {(s.notes ||
+                s.aiPrepSheet ||
+                s.bookingGoal ||
+                (Array.isArray(s.aiQuestions) && s.aiQuestions.length > 0)) && (
+                <div className="mt-3 space-y-3 text-sm text-slate-300">
+                  {s.notes && (
+                    <div className="text-slate-400">Notes: {s.notes}</div>
+                  )}
+                  {s.bookingGoal && (
+                    <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-blue-300">
+                        Mentee booking goal
+                      </p>
+                      <p className="mt-1 leading-6">{s.bookingGoal}</p>
+                    </div>
+                  )}
+                  {s.aiPrepSheet && (
+                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-emerald-300">
+                        Session notes
+                      </p>
+                      <p className="mt-1 leading-6">
+                        {normalizePrepSheet(s.aiPrepSheet)?.summary ||
+                          "AI-generated session summary"}
+                      </p>
+                    </div>
+                  )}
+
+                  {Array.isArray(s.aiQuestions) && s.aiQuestions.length > 0 && (
+                    <div className="rounded-lg border border-blue-600/20 bg-slate-950/40 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-blue-300 mb-2">
+                        AI suggested questions
+                      </p>
+                      <ul className="space-y-1 text-slate-300">
+                        {s.aiQuestions.slice(0, 4).map((question, idx) => (
+                          <li key={idx}>• {question}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="mt-4 flex flex-wrap gap-2 items-center">
@@ -227,11 +279,11 @@ export default function MenteeSessions({ onNavigate }) {
                 {/* Cancel is allowed for any session that is not completed, cancelled or declined */}
                 {!["COMPLETED", "CANCELLED", "DECLINED"].includes(s.status) && (
                   <button
-                      onClick={() => handleCancelClick(s.id)}
-                      className="px-3 py-1.5 bg-red-600 text-white rounded-md cursor-pointer hover:bg-red-700 transition text-sm font-medium"
-                    >
-                      {confirmCancelFor === s.id ? "Confirm cancel" : "Cancel"}
-                    </button>
+                    onClick={() => handleCancelClick(s.id)}
+                    className="px-3 py-1.5 bg-red-600 text-white rounded-md cursor-pointer hover:bg-red-700 transition text-sm font-medium"
+                  >
+                    {confirmCancelFor === s.id ? "Confirm cancel" : "Cancel"}
+                  </button>
                 )}
 
                 {/* COMPLETED SESSION */}

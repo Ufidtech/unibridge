@@ -19,11 +19,21 @@ import AdminPayoutDashboard from "./components/admin/AdminPayoutDashboard";
 import AdminLoginPage from "./components/admin/AdminLoginPage";
 import AdminUserManagement from "./components/admin/AdminUserManagement";
 import AdminRouteGuard from "./components/admin/AdminRouteGuard";
+import RequestFundsPage from "./components/mentee/RequestFundsPage";
+import WalletTransactionsPanel from "./components/mentee/WalletTransactionsPanel";
 import { fetchMe } from "./lib/api/auth";
+
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsOfService from "./components/TermsOfService";
 
-function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData, adminData, setAdminData }) {
+function AppRoutes({
+  menteeData,
+  setMenteeData,
+  mentorData,
+  setMentorData,
+  adminData,
+  setAdminData,
+}) {
   // Auto-logout on token expiry/401 (must be inside Router context)
   useAutoLogout();
   const navigate = useNavigate();
@@ -53,10 +63,49 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData, admin
       )}
       {import.meta.env.DEV && (
         <>
-          <Route path="/admin/login" element={<AdminLoginPage onLoginSuccess={(data) => handleNavigation("/admin/payouts", data)} />} />
-          <Route path="/admin/payouts" element={<AdminRouteGuard adminData={adminData}><AdminPayoutDashboard onNavigate={handleNavigation} adminInfo={adminData} /></AdminRouteGuard>} />
-          <Route path="/admin/users" element={<AdminRouteGuard adminData={adminData}><AdminUserManagement onNavigate={handleNavigation} adminInfo={adminData} /></AdminRouteGuard>} />
-          <Route path="/admin" element={<AdminRouteGuard adminData={adminData}><AdminPayoutDashboard onNavigate={handleNavigation} adminInfo={adminData} /></AdminRouteGuard>} />
+          <Route
+            path="/admin/login"
+            element={
+              <AdminLoginPage
+                onLoginSuccess={(data) =>
+                  handleNavigation("/admin/payouts", data)
+                }
+              />
+            }
+          />
+          <Route
+            path="/admin/payouts"
+            element={
+              <AdminRouteGuard adminData={adminData}>
+                <AdminPayoutDashboard
+                  onNavigate={handleNavigation}
+                  adminInfo={adminData}
+                />
+              </AdminRouteGuard>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRouteGuard adminData={adminData}>
+                <AdminUserManagement
+                  onNavigate={handleNavigation}
+                  adminInfo={adminData}
+                />
+              </AdminRouteGuard>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRouteGuard adminData={adminData}>
+                <AdminPayoutDashboard
+                  onNavigate={handleNavigation}
+                  adminInfo={adminData}
+                />
+              </AdminRouteGuard>
+            }
+          />
         </>
       )}
       <Route path="/" element={<LandingPage onNavigate={handleNavigation} />} />
@@ -105,6 +154,26 @@ function AppRoutes({ menteeData, setMenteeData, mentorData, setMentorData, admin
           />
         }
       />
+      <Route
+        path="/request-funds"
+        element={
+          <RequestFundsPage
+            userInfo={menteeData || { name: "Student", level: "SS3" }}
+            onNavigate={handleNavigation}
+          />
+        }
+      />
+      <Route
+        path="/wallet/transactions"
+        element={
+          <div className="min-h-screen bg-slate-950 p-4 md:p-8 text-slate-100">
+            <div className="mx-auto max-w-4xl">
+              <WalletTransactionsPanel wallet={menteeData?.wallet || {}} />
+            </div>
+          </div>
+        }
+      />
+
       <Route
         path="/mentor-dashboard"
         element={
@@ -162,7 +231,6 @@ export default function App() {
           // ignore, token may be invalid/expired
         });
     }
-
   }, []);
 
   return (

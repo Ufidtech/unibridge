@@ -52,18 +52,45 @@ router.post('/recommend-mentors', async (req, res, next) => {
 router.post('/generate-prep-sheet', async (req, res, next) => {
   try {
     const { studentInput } = req.body ?? {};
+    const normalizedStudentInput = typeof studentInput === 'string' ? studentInput.trim() : '';
 
-    if (!studentInput || !studentInput.trim()) {
+    if (!normalizedStudentInput) {
       return res.status(400).json({ error: 'studentInput is required.' });
     }
 
-    const prepSheet = await generateMenteePrepSheet(studentInput.trim());
-    return res.json({ prepSheet });
+    const prepSheet = await generateMenteePrepSheet(normalizedStudentInput);
+    const structuredPrepSheet = {
+      summary: 'Here’s a clear session summary based on what you shared.',
+      sections: [
+        { title: 'Mentee Profile', body: normalizedStudentInput.slice(0, 280) || 'You shared your goals and what you want help with.' },
+        { title: 'Core Concern', body: `What seems to be holding you back is: ${normalizedStudentInput.slice(0, 180) || 'the main issue you described'}.` },
+        { title: 'The 3-Point Agenda', body: '1) Clarify your goals. 2) Identify the main blockers. 3) Plan your next steps with the mentor.' },
+      ],
+      rawMarkdown: prepSheet,
+    };
+
+
+    return res.json({ prepSheet: structuredPrepSheet });
   } catch (error) {
     console.error('Prep Sheet Gen Error:', error);
     console.error('Prep Sheet Gen Error Message:', error?.message);
     console.error('Prep Sheet Gen Error Status:', error?.status || error?.response?.status);
-    return res.status(503).json({ message: 'Failed to generate prep sheet' });
+
+    const normalizedStudentInput = typeof req.body?.studentInput === 'string' ? req.body.studentInput.trim() : '';
+    const fallbackPrepSheet = {
+      summary: 'Here’s a fallback session summary based on what you shared.',
+      sections: [
+        { title: 'Mentee Profile', body: normalizedStudentInput.slice(0, 280) || 'You shared a goal, but it could not be processed by the AI provider.' },
+        { title: 'Core Concern', body: normalizedStudentInput ? `What seems to be holding you back is: ${normalizedStudentInput.slice(0, 180)}.` : 'The AI provider is temporarily unavailable, so this fallback uses the information you entered.' },
+        { title: 'The 3-Point Agenda', body: '1) Clarify your goals. 2) Review obstacles. 3) Plan next steps with the mentor.' },
+      ],
+      rawMarkdown: `**Fallback session summary**\n\nThe AI provider is temporarily unavailable.\n\n**What you shared**\n${normalizedStudentInput}`,
+      fallback: true,
+    };
+
+
+
+    return res.status(200).json({ prepSheet: fallbackPrepSheet, warning: 'AI provider unavailable; returned fallback session summary.' });
   }
 });
 

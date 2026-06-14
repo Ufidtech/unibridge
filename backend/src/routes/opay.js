@@ -76,29 +76,78 @@ router.post('/create', requireAuth, async (req, res, next) => {
       currency: z.string().default('NGN'),
       payerId: z.string().optional(),
       bookingType: z.enum(['PRIVATE_BOOKING']).optional(),
+      sessionTitle: z.string().optional(),
+      mentorId: z.string().optional(),
+      mentorName: z.string().optional(),
+      walletBalance: z.number().optional(),
     }).parse(req.body);
 
     const fees = getPlatformFees(body.amount);
+    const walletBefore = Number(body.walletBalance ?? 0);
+    const walletDeduction = Number(fees.menteeChargeTotal.toFixed(2));
+    const escrowAmount = Number(fees.baseAmount.toFixed(2));
+    const walletAfter = Number((walletBefore - walletDeduction).toFixed(2));
 
     const payment = {
       provider: 'opay',
       sessionId: body.sessionId,
       bookingType: body.bookingType || 'PRIVATE_BOOKING',
+      sessionTitle: body.sessionTitle || null,
+      mentorId: body.mentorId || null,
+      mentorName: body.mentorName || null,
       amount: body.amount,
       currency: body.currency,
       status: 'pending',
       payerUid: body.payerId || req.user.uid,
       feeBreakdown: fees,
+      checkoutFlow: {
+        step: 'wallet_deduction',
+        walletBefore,
+        walletDeduction,
+        escrowAmount,
+        walletAfter,
+        mockStates: ['wallet_deduction', 'escrow', 'confirmation'],
+      },
       createdAt: nowIso(),
+      updatedAt: nowIso(),
     };
 
     const ref = await firestore.collection('payments').add(payment);
+
+    const walletRef = firestore.collection('wallets').doc(payment.payerUid);
+    const walletDoc = await walletRef.get();
+    const wallet = walletDoc.exists ? walletDoc.data() : { currentBalance: 0, transactionHistory: [], escrowBalance: 0 };
+    const transaction = {
+      id: ref.id,
+      userId: payment.payerUid,
+      type: 'wallet_deduction',
+      amount: walletDeduction,
+      currency: body.currency,
+      description: `Checkout deduction for ${body.sessionTitle || 'private booking'}`,
+      status: 'pending',
+      step: 'wallet_deduction',
+      escrowAmount,
+      walletBefore,
+      walletAfter,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    };
+
+    await firestore.collection('walletTransactions').doc(ref.id).set(transaction);
+    await walletRef.set({
+      userId: payment.payerUid,
+      currentBalance: walletBefore,
+      escrowBalance: Number(wallet.escrowBalance || 0) + escrowAmount,
+      transactionHistory: [transaction, ...(wallet.transactionHistory || [])],
+      updatedAt: nowIso(),
+    }, { merge: true });
 
     return res.status(201).json({
       paymentId: ref.id,
       paymentToken: `mock-opay-token-${ref.id}`,
       checkoutUrl: `${process.env.APP_BASE_URL || ''}/pay/mock/${ref.id}`,
       payment,
+      checkoutFlow: payment.checkoutFlow,
     });
   } catch (err) {
     return next(err);
@@ -204,10 +253,6 @@ router.post('/webhook', async (req, res, next) => {
         updatedAt: nowIso(),
       }, { merge: true });
 
-      await firestore.collection('privateBookingRequests').doc(payout.sessionId).set({
-        payoutStatus,
-        updatedAt: nowIso(),
-      }, { merge: true });
 
       return res.json({ ok: true, type: 'payout' });
     }
@@ -225,6 +270,43 @@ router.post('/webhook', async (req, res, next) => {
     if (paymentStatus === 'completed') {
       const payment = paymentDoc.data();
       const fees = getPlatformFees(payment.amount);
+      const walletRef = firestore.collection('wallets').doc(payment.payerUid);
+      const walletDoc = await walletRef.get();
+      const wallet = walletDoc.exists ? walletDoc.data() : { currentBalance: 0, transactionHistory: [], escrowBalance: 0 };
+      const completedTransaction = {
+        ...(wallet.transactionHistory || []).find((tx) => tx.id === body.paymentId) || {},
+        id: body.paymentId,
+        userId: payment.payerUid,
+        type: 'wallet_deduction',
+        amount: Number((payment.checkoutFlow?.walletDeduction ?? fees.menteeChargeTotal).toFixed(2)),
+        currency: payment.currency || 'NGN',
+        description: payment.sessionTitle || 'Private booking checkout',
+        status: 'completed',
+        step: 'confirmation',
+        escrowAmount: Number((payment.checkoutFlow?.escrowAmount ?? fees.baseAmount).toFixed(2)),
+        walletBefore: Number(payment.checkoutFlow?.walletBefore ?? wallet.currentBalance ?? 0),
+        walletAfter: Number(payment.checkoutFlow?.walletAfter ?? wallet.currentBalance ?? 0),
+        confirmedAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+
+      const transactionHistory = [
+        completedTransaction,
+        ...(Array.isArray(wallet.transactionHistory)
+          ? wallet.transactionHistory.filter((tx) => tx.id !== body.paymentId)
+          : []),
+      ];
+
+      await walletRef.set({
+        userId: payment.payerUid,
+        currentBalance: Number(completedTransaction.walletAfter ?? wallet.currentBalance ?? 0),
+        escrowBalance: Number((wallet.escrowBalance || 0) + completedTransaction.escrowAmount),
+        transactionHistory,
+        updatedAt: nowIso(),
+      }, { merge: true });
+
+      await firestore.collection('walletTransactions').doc(body.paymentId).set(completedTransaction, { merge: true });
+
       await firestore.collection('sessionRequests').doc(payment.sessionId).set({
         paid: true,
         paymentId: body.paymentId,
@@ -233,14 +315,14 @@ router.post('/webhook', async (req, res, next) => {
         privateBooking: true,
         feeBreakdown: fees,
         paymentStatus,
+        checkoutFlow: {
+          ...payment.checkoutFlow,
+          step: 'confirmation',
+          confirmedAt: nowIso(),
+        },
         updatedAt: nowIso(),
       }, { merge: true });
 
-      await firestore.collection('privateBookingRequests').doc(payment.sessionId).set({
-        status: 'paid',
-        paymentStatus,
-        updatedAt: nowIso(),
-      }, { merge: true });
     }
 
     return res.json({ ok: true });

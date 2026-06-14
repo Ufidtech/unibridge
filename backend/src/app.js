@@ -10,6 +10,7 @@ import contactRoutes from './routes/contactRoutes.js';
 import debugRoutes from './routes/debugRoutes.js';
 import devRoutes from './routes/devRoutes.js';
 import opayRoutes from './routes/opay.js';
+import walletRoutes from './routes/walletRoutes.js';
 import adminPayoutRoutes from './routes/adminPayoutRoutes.js';
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/debug', debugRoutes);
 app.use('/api/dev', devRoutes);
 app.use('/api/pay/opay', opayRoutes);
+app.use('/api/wallet', walletRoutes);
 app.use('/api/admin/payouts', adminPayoutRoutes);
 
 app.use((_req, res) => {

@@ -11,13 +11,9 @@ export default function PendingRequest({
   const mentee = request?.mentee || {};
   const menteeProfile = mentee?.menteeProfile || {};
 
-  const menteeName =
-    mentee?.name ||
-    request?.studentName ||
-    "Unknown Student";
+  const menteeName = mentee?.name || request?.studentName || "Unknown Student";
 
-  const menteeEmail =
-    mentee?.email || "No email";
+  const menteeEmail = mentee?.email || "No email";
 
   // Support multiple places school/university might be stored: menteeProfile.school, menteeProfile.university, request.school, mentee.school
   const menteeSchool =
@@ -28,27 +24,26 @@ export default function PendingRequest({
     mentee?.school ||
     "School not specified";
 
-  const menteeClass =
-    menteeProfile?.classLevel ||
-    "Class not specified";
+  const menteeClass = menteeProfile?.classLevel || "Class not specified";
 
-  const menteeCourse =
-    menteeProfile?.dreamCourse ||
-    "Not specified";
+  const menteeCourse = menteeProfile?.dreamCourse || "Not specified";
 
-  const menteeBio =
-    menteeProfile?.bio ||
-    "";
+  const menteeBio = menteeProfile?.bio || "";
 
-  const menteeVibes = Array.isArray(
-    menteeProfile?.selectedVibes
-  )
+  const menteeVibes = Array.isArray(menteeProfile?.selectedVibes)
     ? menteeProfile.selectedVibes
     : [];
 
   const aiQuestions = Array.isArray(request?.aiQuestions)
     ? request.aiQuestions
     : [];
+  const bookingGoal =
+    request?.bookingGoal ||
+    request?.goal ||
+    request?.sessionGoal ||
+    request?.topic ||
+    "";
+  const aiPrepSheet = request?.aiPrepSheet || null;
 
   const cardClass = compact
     ? "bg-slate-900 border-2 border-blue-500/30 rounded-xl p-4 mb-4 hover:border-blue-500 transition text-sm min-h-[180px]"
@@ -57,44 +52,89 @@ export default function PendingRequest({
   return (
     <>
       <div className={cardClass}>
-        
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold text-white">
-              {menteeName}
-            </h3>
+            <h3 className="text-lg font-bold text-white">{menteeName}</h3>
 
             <p className="text-sm text-slate-400 mt-1">
               {menteeClass} • {menteeCourse}
             </p>
 
-            <p className="text-xs text-slate-500 mt-1">
-              {menteeEmail}
-            </p>
+            <p className="text-xs text-slate-500 mt-1">{menteeEmail}</p>
           </div>
 
           {/* Status badge reflects the actual request status (PENDING, CONFIRMED, DECLINED, CANCELLED, COMPLETED) */}
-          <span className="px-3 py-1 text-xs font-semibold rounded-full"
+          <span
+            className="px-3 py-1 text-xs font-semibold rounded-full"
             style={{
-              background: request?.status === 'PENDING' ? 'rgba(250,204,21,0.12)' : 'transparent',
-              border: request?.status === 'PENDING' ? '1px solid rgba(250,204,21,0.2)' : '1px solid rgba(148,163,184,0.06)',
-              color: request?.status === 'PENDING' ? '#f59e0b' : '#94a3b8',
+              background:
+                request?.status === "PENDING"
+                  ? "rgba(250,204,21,0.12)"
+                  : "transparent",
+              border:
+                request?.status === "PENDING"
+                  ? "1px solid rgba(250,204,21,0.2)"
+                  : "1px solid rgba(148,163,184,0.06)",
+              color: request?.status === "PENDING" ? "#f59e0b" : "#94a3b8",
             }}
           >
-            {request?.status ? request.status.charAt(0) + request.status.slice(1).toLowerCase() : 'Pending'}
+            {request?.status
+              ? request.status.charAt(0) + request.status.slice(1).toLowerCase()
+              : "Pending"}
           </span>
         </div>
 
         {/* Topic */}
         <div className="mb-5">
           <p className="text-slate-300">
-            <span className="font-semibold">
-              Topic:
-            </span>{" "}
+            <span className="font-semibold">Topic:</span>{" "}
             {request?.topic || "General Guidance"}
           </p>
         </div>
+
+        {bookingGoal && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-5">
+            <p className="text-[11px] uppercase tracking-wide text-blue-300">
+              Session focus
+            </p>
+            <p className="mt-1 text-slate-200 text-sm leading-6">
+              {bookingGoal}
+            </p>
+          </div>
+        )}
+
+        {aiPrepSheet && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 mb-5 space-y-3">
+            <p className="text-[11px] uppercase tracking-wide text-emerald-300">
+              Mentor prep notes
+            </p>
+            <p className="mt-1 text-slate-200 text-sm leading-6">
+              {aiPrepSheet.summary ||
+                aiPrepSheet.title ||
+                "Prepared session context"}
+            </p>
+
+            {Array.isArray(aiPrepSheet.sections) &&
+              aiPrepSheet.sections.length > 0 && (
+                <div className="grid gap-2">
+                  {aiPrepSheet.sections.slice(0, 3).map((section, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-lg border border-slate-800 bg-slate-950/50 p-3"
+                    >
+                      <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                        {section?.title || `Section ${idx + 1}`}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-300 leading-5">
+                        {section?.body || section?.text || ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
+        )}
 
         {/* AI Questions */}
         {aiQuestions.length > 0 && (
@@ -113,9 +153,7 @@ export default function PendingRequest({
                   key={idx}
                   className="text-slate-300 text-sm flex items-start gap-2"
                 >
-                  <span className="text-blue-500">
-                    •
-                  </span>
+                  <span className="text-blue-500">•</span>
 
                   <span>{question}</span>
                 </li>
@@ -136,16 +174,12 @@ export default function PendingRequest({
 
           <div className="space-y-2 text-sm">
             <p className="text-slate-300">
-              <span className="text-slate-500">
-                Date:
-              </span>{" "}
+              <span className="text-slate-500">Date:</span>{" "}
               {request?.sessionDate || "-"}
             </p>
 
             <p className="text-slate-300">
-              <span className="text-slate-500">
-                Time:
-              </span>{" "}
+              <span className="text-slate-500">Time:</span>{" "}
               {request?.sessionTime || "-"}
             </p>
           </div>
@@ -182,19 +216,13 @@ export default function PendingRequest({
       {/* PROFILE MODAL */}
       {showProfile && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-          
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-            
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-white">
-                  {menteeName}
-                </h2>
+                <h2 className="text-2xl font-bold text-white">{menteeName}</h2>
 
-                <p className="text-slate-400 mt-1">
-                  {menteeEmail}
-                </p>
+                <p className="text-slate-400 mt-1">{menteeEmail}</p>
               </div>
 
               <button
@@ -207,50 +235,76 @@ export default function PendingRequest({
 
             {/* Profile Body */}
             <div className="space-y-6">
-              
               {/* School */}
               <div>
-                <p className="text-slate-500 text-sm mb-1">
-                    School of choice
-                  </p>
+                <p className="text-slate-500 text-sm mb-1">School of choice</p>
 
-                  <p className="text-white">
-                    {menteeSchool}
-                  </p>
+                <p className="text-white">{menteeSchool}</p>
               </div>
 
               {/* Class */}
               <div>
-                <p className="text-slate-500 text-sm mb-1">
-                  Class Level
-                </p>
+                <p className="text-slate-500 text-sm mb-1">Class Level</p>
 
-                <p className="text-white">
-                  {menteeClass}
-                </p>
+                <p className="text-white">{menteeClass}</p>
               </div>
 
               {/* Dream Course */}
               <div>
-                <p className="text-slate-500 text-sm mb-1">
-                  Dream Course
-                </p>
+                <p className="text-slate-500 text-sm mb-1">Dream Course</p>
 
-                <p className="text-white">
-                  {menteeCourse}
-                </p>
+                <p className="text-white">{menteeCourse}</p>
               </div>
+
+              {bookingGoal && (
+                <div>
+                  <p className="text-slate-500 text-sm mb-1">Booking Goal</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    {bookingGoal}
+                  </p>
+                </div>
+              )}
+
+              {aiPrepSheet && (
+                <div className="space-y-3">
+                  <p className="text-slate-500 text-sm mb-2">
+                    Mentor Prep Notes
+                  </p>
+                  <p className="text-slate-300 leading-relaxed">
+                    {aiPrepSheet.summary ||
+                      aiPrepSheet.title ||
+                      "Prepared session context"}
+                  </p>
+
+                  {Array.isArray(aiPrepSheet.sections) &&
+                    aiPrepSheet.sections.length > 0 && (
+                      <div className="grid gap-2">
+                        {aiPrepSheet.sections
+                          .slice(0, 3)
+                          .map((section, idx) => (
+                            <div
+                              key={idx}
+                              className="rounded-lg border border-slate-800 bg-slate-950/50 p-3"
+                            >
+                              <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                                {section?.title || `Section ${idx + 1}`}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-300 leading-5">
+                                {section?.body || section?.text || ""}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                </div>
+              )}
 
               {/* Bio */}
               {menteeBio && (
                 <div>
-                  <p className="text-slate-500 text-sm mb-1">
-                    Bio
-                  </p>
+                  <p className="text-slate-500 text-sm mb-1">Bio</p>
 
-                  <p className="text-slate-300 leading-relaxed">
-                    {menteeBio}
-                  </p>
+                  <p className="text-slate-300 leading-relaxed">{menteeBio}</p>
                 </div>
               )}
 

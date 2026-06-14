@@ -67,6 +67,12 @@ router.post("/private-bookings/:sessionId/approve-payout", requireAuth, requireR
       approvalNote: body.note || null,
       requestedBy: req.user.uid,
       approvedBy: req.user.uid,
+      verification: {
+        status: "verified",
+        verifiedAt: nowIso(),
+        verifiedBy: req.user.uid,
+        note: body.note || "Payout approved after admin verification",
+      },
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };

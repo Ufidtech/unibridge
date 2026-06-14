@@ -1,34 +1,68 @@
-export default function MentorCard({ 
-  mentor = {}, 
-  onBookSession = () => {}, 
-  onExplain = () => {}, 
-  computedRating = null 
+export default function MentorCard({
+  mentor = {},
+  onBookSession = () => {},
+  onExplain = () => {},
+  computedRating = null,
 }) {
-  // 1. REAL RATING CALCULATION
-  // Always format to exactly 1 decimal place (e.g., 4.9, 5.0, 0.0)
   const rawRating = computedRating?.average ?? mentor?.rating ?? 0;
-  const displayRating = Number(rawRating).toFixed(1); 
-  
-  // Always grab the count (default to 0)
+
+  const displayRating = Number(rawRating).toFixed(1);
   const displayCount = computedRating?.count ?? mentor?.reviews ?? 0;
 
-  // 2. REAL BREAKDOWN CALCULATIONS
   const breakdown = mentor?.breakdown || {};
-  const dreamMatch = breakdown.dreamSkillJaccard ? Math.round(Number(breakdown.dreamSkillJaccard) * 100) : 0;
-  const interestMatch = breakdown.interestSkillJaccard ? Math.round(Number(breakdown.interestSkillJaccard) * 100) : 0;
-  const availability = breakdown.availabilityScore != null ? Math.round(Number(breakdown.availabilityScore) * 100) : null;
+  const dreamMatch = breakdown.dreamSkillJaccard
+    ? Math.round(Number(breakdown.dreamSkillJaccard) * 100)
+    : 0;
+  const interestMatch = breakdown.interestSkillJaccard
+    ? Math.round(Number(breakdown.interestSkillJaccard) * 100)
+    : 0;
+  const availability =
+    breakdown.availabilityScore != null
+      ? Math.round(Number(breakdown.availabilityScore) * 100)
+      : null;
   const vibes = Number(breakdown.vibeMatches) || 0;
 
-  // Fallbacks for display
-  const initials = mentor?.initials || '??';
-  const name = mentor?.name || 'Unknown Mentor';
-  const university = mentor?.university || 'University Not Listed';
-  const level = mentor?.level || '';
-  const bio = mentor?.bio || 'No bio provided.';
+  const initials = mentor?.initials || "??";
+  const name = mentor?.name || "Unknown Mentor";
+  const university = mentor?.university || "University Not Listed";
+  const level = mentor?.level || "";
+  const bio = mentor?.bio || "No bio provided.";
   const skills = Array.isArray(mentor?.skills) ? mentor.skills : [];
-  const responseTime = mentor?.responseTime || 'Response time unknown';
-  const sessionPrice = Number(mentor?.sessionPrice || mentor?.price || 0);
-  const menteeTotal = Number((sessionPrice * 1.1).toFixed(2));
+  const responseTime = mentor?.responseTime || "Response time unknown";
+  const rawSessionPrice =
+    mentor?.sessionPrice ??
+    mentor?.mentorProfile?.sessionPrice ??
+    mentor?.mentorProfilePrice ??
+    mentor?.price ??
+    mentor?.bookingPrice ??
+    mentor?.session_price ??
+    mentor?.mentorPrice ??
+    mentor?.amount ??
+    mentor?.rate ??
+    mentor?.pricing?.session ??
+    mentor?.pricing?.price ??
+    0;
+
+  const sessionPriceValue = Number(rawSessionPrice);
+  const sessionPrice = Number.isFinite(sessionPriceValue)
+    ? sessionPriceValue
+    : 0;
+  const menteeFee = Number((sessionPrice * 0.1).toFixed(2));
+  const menteeTotal = Number((sessionPrice + menteeFee).toFixed(2));
+  const priceLabel =
+    mentor?.priceLabel || mentor?.pricingLabel || mentor?.currency || "₦";
+
+  const freemiumSplit = mentor?.freemiumSplit || { free: true, premium: true };
+  const isFreeVisible = freemiumSplit?.free !== false;
+  const isPremiumVisible = freemiumSplit?.premium !== false;
+  const bookingGoal =
+    mentor?.bookingGoal || mentor?.goal || mentor?.targetGoal || "";
+  const aiPrepSheet = mentor?.aiPrepSheet || null;
+  const aiSuggestedQuestions = Array.isArray(mentor?.aiQuestions)
+    ? mentor.aiQuestions
+    : Array.isArray(mentor?.suggestedQuestions)
+      ? mentor.suggestedQuestions
+      : [];
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-lg transition flex flex-col">
@@ -39,9 +73,7 @@ export default function MentorCard({
         </div>
 
         {/* Name */}
-        <h3 className="text-lg font-bold text-slate-100 mb-1">
-          {name}
-        </h3>
+        <h3 className="text-lg font-bold text-slate-100 mb-1">{name}</h3>
 
         {/* University & Level */}
         <p className="text-sm text-slate-400 mb-3">
@@ -78,40 +110,87 @@ export default function MentorCard({
               {displayRating}
             </span>
             {/* Always show the review count now */}
-            <span className="text-xs text-slate-500">
-              ({displayCount})
-            </span>
+            <span className="text-xs text-slate-500">({displayCount})</span>
           </div>
-          <p className="text-xs text-slate-400">
-            {responseTime}
-          </p>
+          <p className="text-xs text-slate-400">{responseTime}</p>
         </div>
 
         <div className="mb-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
-          <p className="text-xs text-slate-400">Private booking total</p>
+          <p className="text-xs text-slate-400">Session price</p>
           <p className="text-sm font-semibold text-emerald-300">
-            {sessionPrice > 0 ? `₦${menteeTotal.toFixed(2)}` : 'Price not set yet'}
+            {Number.isFinite(sessionPrice) && sessionPrice >= 0
+              ? `${priceLabel}${sessionPrice.toFixed(2)}`
+              : "Price not set yet"}
+          </p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {isFreeVisible ? "Free discovery visible" : "Free discovery hidden"}
+            {" • "}
+            {isPremiumVisible
+              ? `Premium booking available • Total ${priceLabel}${menteeTotal.toFixed(2)}`
+              : "Premium booking hidden"}
           </p>
         </div>
 
         {/* Recommendation breakdown */}
         {mentor.breakdown && (
           <div className="mb-4 text-xs text-slate-400">
-            <div className="font-semibold text-slate-200 mb-1">Why this mentor?</div>
+            <div className="font-semibold text-slate-200 mb-1">
+              Why this mentor?
+            </div>
             <ul className="list-disc list-inside space-y-1">
               {dreamMatch > 0 && (
                 <li>Matches your course focus ({dreamMatch}%)</li>
               )}
-              {interestMatch > 0 && (
-                <li>Relevant skills ({interestMatch}%)</li>
-              )}
+              {interestMatch > 0 && <li>Relevant skills ({interestMatch}%)</li>}
               {vibes > 0 && (
-                <li>{vibes} shared vibe{vibes > 1 ? 's' : ''}</li>
+                <li>
+                  {vibes} shared vibe{vibes > 1 ? "s" : ""}
+                </li>
               )}
               {availability !== null && (
                 <li>Availability score: {availability}%</li>
               )}
             </ul>
+          </div>
+        )}
+
+        {bookingGoal && (
+          <div className="mb-4 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-slate-300">
+            <p className="text-[11px] uppercase tracking-wide text-blue-300">
+              Mentee booking goal
+            </p>
+            <p className="mt-1 leading-5">{bookingGoal}</p>
+          </div>
+        )}
+
+        {(aiPrepSheet || aiSuggestedQuestions.length > 0) && (
+          <div className="mb-4 grid gap-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-xs text-slate-300">
+            {aiPrepSheet && (
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Mentor prep notes
+                </p>
+                <p className="mt-1 leading-5 text-slate-300">
+                  {aiPrepSheet.summary ||
+                    aiPrepSheet.title ||
+                    "Prepared session context"}
+                </p>
+              </div>
+            )}
+            {aiSuggestedQuestions.length > 0 && (
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                  AI suggested questions
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {aiSuggestedQuestions.slice(0, 4).map((question, idx) => (
+                    <li key={idx} className="leading-5">
+                      • {question}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -123,8 +202,8 @@ export default function MentorCard({
           >
             Book Session
           </button>
-          <button 
-            onClick={() => onExplain(mentor)} 
+          <button
+            onClick={() => onExplain(mentor)}
             className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition cursor-pointer"
           >
             Explain

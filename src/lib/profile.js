@@ -19,12 +19,20 @@ export function normalizeSchool(school) {
 }
 
 export function buildMenteePayload(form) {
+  const classLevel = form.classLevel || form.studentClass || '';
+  const school = normalizeSchool(form.school || form.university || form.universityName || '');
+
   return {
-    school: normalizeSchool(form.school || ''),
-    classLevel: form.classLevel || '',
+    school,
+    university: school,
+    universityName: school,
+    classLevel,
+    studentClass: classLevel,
     dreamCourse: form.dreamCourse || '',
+    selectedVibes: Array.isArray(form.selectedVibes) ? form.selectedVibes : [],
   };
 }
+
 
 export function buildMentorPayload(form) {
   return {
@@ -42,4 +50,6 @@ export default {
   defaultMentorProfile,
   normalizeSchool,
   buildMenteePayload,
+  buildMentorPayload,
 };
+

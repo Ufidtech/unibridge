@@ -1,17 +1,31 @@
-import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import { updateMe } from '../../lib/api/auth';
-import { buildMenteePayload } from '../../lib/profile';
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import { updateMe } from "../../lib/api/auth";
+import { buildMenteePayload } from "../../lib/profile";
 
-export default function MenteeProfile({ userInfo, universitySuggestions, onNavigate }) {
+export default function MenteeProfile({
+  userInfo,
+  universitySuggestions,
+  onNavigate,
+}) {
   const [editingProfile, setEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({ school: '', classLevel: '', dreamCourse: '' });
-  const [schoolChoice, setSchoolChoice] = useState('');
-  const [schoolManual, setSchoolManual] = useState('');
+  const [profileForm, setProfileForm] = useState({
+    school: "",
+    classLevel: "",
+    dreamCourse: "",
+  });
+  const [schoolChoice, setSchoolChoice] = useState("");
+  const [schoolManual, setSchoolManual] = useState("");
+
+  const getProfileSource = (source) => {
+    if (!source) return null;
+    return source.menteeProfile || source.profile || source;
+  };
+
   // Helper to safely read localStorage menteeData
   const readLocalMentee = () => {
     try {
-      const raw = localStorage.getItem('menteeData');
+      const raw = localStorage.getItem("menteeData");
       if (!raw) return null;
       return JSON.parse(raw);
     } catch {
@@ -22,60 +36,74 @@ export default function MenteeProfile({ userInfo, universitySuggestions, onNavig
   // Initialize form when userInfo changes or when component mounts.
   // Accept multiple shapes: userInfo, userInfo.user, or cached localStorage.
   useEffect(() => {
-    const src = userInfo?.menteeProfile ? { profile: userInfo.menteeProfile, user: userInfo }
-      : userInfo?.user?.menteeProfile ? { profile: userInfo.user.menteeProfile, user: userInfo.user }
-      : null;
-
-    const cached = readLocalMentee();
-
-    const final = src || (cached && cached.menteeProfile ? { profile: cached.menteeProfile, user: cached } : null);
+    const src = getProfileSource(userInfo) || getProfileSource(userInfo?.user);
+    const cached = getProfileSource(readLocalMentee());
+    const final = src || cached;
 
     if (final) {
-      const existingSchool = final.profile.school || final.profile.university || '';
+      const existingSchool =
+        final.school || final.university || final.universityName || "";
+
       setProfileForm({
         school: existingSchool,
-        classLevel: final.profile.classLevel || '',
-        dreamCourse: final.profile.dreamCourse || '',
+        classLevel: final.classLevel || "",
+        dreamCourse: final.dreamCourse || "",
       });
+
       setSchoolManual(existingSchool);
     }
   }, [userInfo]);
 
   const handleSaveProfile = async () => {
     try {
-      const schoolToSave = (schoolChoice === 'Other') ? (schoolManual || profileForm.school) : (schoolChoice || profileForm.school);
-      const payload = buildMenteePayload({ ...profileForm, school: schoolToSave });
+      const schoolToSave =
+        schoolChoice === "Other"
+          ? schoolManual || profileForm.school
+          : schoolChoice || profileForm.school;
+      const payload = buildMenteePayload({
+        ...profileForm,
+        school: schoolToSave,
+      });
       const updated = await updateMe(payload);
       const newUser = updated.user;
-      
-      if (newUser && newUser.role === 'MENTEE') {
-        localStorage.setItem('menteeData', JSON.stringify(newUser));
-        if (onNavigate) onNavigate('/mentee-dashboard', newUser);
+
+      if (newUser && newUser.role === "MENTEE") {
+        localStorage.setItem("menteeData", JSON.stringify(newUser));
+        if (onNavigate) onNavigate("/mentee-dashboard", newUser);
       }
-      
+
       setEditingProfile(false);
+      const savedProfile = getProfileSource(newUser);
       setProfileForm({
-        school: newUser?.menteeProfile?.school || newUser?.menteeProfile?.university || '',
-        classLevel: newUser?.menteeProfile?.classLevel || '',
-        dreamCourse: newUser?.menteeProfile?.dreamCourse || '',
+        school:
+          savedProfile?.school ||
+          savedProfile?.university ||
+          savedProfile?.universityName ||
+          "",
+        classLevel: savedProfile?.classLevel || "",
+        dreamCourse: savedProfile?.dreamCourse || "",
       });
-      setSchoolChoice('');
-      setSchoolManual('');
-      toast.success('Profile updated successfully');
+
+      setSchoolChoice("");
+      setSchoolManual("");
+      toast.success("Profile updated successfully");
     } catch (err) {
-      toast.error('Failed to update profile: ' + err.message);
+      toast.error("Failed to update profile: " + err.message);
     }
   };
 
   const handleCancelEdit = () => {
+    const profile = getProfileSource(userInfo);
     setProfileForm({
-      school: userInfo?.menteeProfile?.school || userInfo?.menteeProfile?.university || '',
-      classLevel: userInfo?.menteeProfile?.classLevel || '',
-      dreamCourse: userInfo?.menteeProfile?.dreamCourse || '',
+      school:
+        profile?.school || profile?.university || profile?.universityName || "",
+      classLevel: profile?.classLevel || "",
+      dreamCourse: profile?.dreamCourse || "",
     });
+
     setEditingProfile(false);
-    setSchoolChoice('');
-    setSchoolManual('');
+    setSchoolChoice("");
+    setSchoolManual("");
   };
 
   return (
@@ -85,46 +113,58 @@ export default function MenteeProfile({ userInfo, universitySuggestions, onNavig
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 text-slate-300 space-y-4">
         <div>
           <label className="block text-sm text-slate-400 mb-1">Name</label>
-          <input 
-            value={userInfo?.name || ''} 
-            readOnly 
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 cursor-not-allowed" 
+          <input
+            value={userInfo?.name || ""}
+            readOnly
+            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 cursor-not-allowed"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-1">Which school would you like to attend?</label>
+          <label className="block text-sm text-slate-400 mb-1">
+            Which school would you like to attend?
+          </label>
           {!editingProfile ? (
-            <input 
-              value={profileForm.school} 
-              readOnly 
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 cursor-not-allowed" 
+            <input
+              value={profileForm.school}
+              readOnly
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 cursor-not-allowed"
             />
           ) : (
             <div className="space-y-2">
               <select
                 aria-label="Select suggested school"
-                value={universitySuggestions.includes(schoolChoice) ? schoolChoice : (universitySuggestions.includes(profileForm.school) ? profileForm.school : (schoolChoice || ''))}
+                value={
+                  universitySuggestions.includes(schoolChoice)
+                    ? schoolChoice
+                    : universitySuggestions.includes(profileForm.school)
+                      ? profileForm.school
+                      : schoolChoice || ""
+                }
                 onChange={(e) => {
                   const v = e.target.value;
                   setSchoolChoice(v);
-                  if (v !== 'Other') {
+                  if (v !== "Other") {
                     setProfileForm({ ...profileForm, school: v });
-                    setSchoolManual('');
+                    setSchoolManual("");
                   } else {
-                    setSchoolManual(profileForm.school || '');
+                    setSchoolManual(profileForm.school || "");
                   }
                 }}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
               >
                 <option value="">-- choose a school --</option>
                 {universitySuggestions.map((u) => (
-                  <option key={u} value={u}>{u}</option>
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
                 ))}
                 <option value="Other">Other (enter manually)</option>
               </select>
 
-              {schoolChoice === 'Other' || (!schoolChoice && !universitySuggestions.includes(profileForm.school)) ? (
+              {schoolChoice === "Other" ||
+              (!schoolChoice &&
+                !universitySuggestions.includes(profileForm.school)) ? (
                 <input
                   placeholder="Type your school name"
                   value={schoolManual}
@@ -137,43 +177,51 @@ export default function MenteeProfile({ userInfo, universitySuggestions, onNavig
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-1">Dream Course</label>
-          <input 
-            value={profileForm.dreamCourse} 
-            readOnly={!editingProfile} 
-            onChange={(e) => setProfileForm({ ...profileForm, dreamCourse: e.target.value })} 
-            className={`w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500 ${editingProfile ? 'bg-slate-800 border border-slate-700 text-slate-100' : 'bg-slate-900 border border-slate-900 text-slate-500 cursor-not-allowed'}`} 
+          <label className="block text-sm text-slate-400 mb-1">
+            Dream Course
+          </label>
+          <input
+            value={profileForm.dreamCourse}
+            readOnly={!editingProfile}
+            onChange={(e) =>
+              setProfileForm({ ...profileForm, dreamCourse: e.target.value })
+            }
+            className={`w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500 ${editingProfile ? "bg-slate-800 border border-slate-700 text-slate-100" : "bg-slate-900 border border-slate-900 text-slate-500 cursor-not-allowed"}`}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-1">Class Level</label>
-          <input 
-            value={profileForm.classLevel} 
-            readOnly={!editingProfile} 
-            onChange={(e) => setProfileForm({ ...profileForm, classLevel: e.target.value })} 
-            className={`w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500 ${editingProfile ? 'bg-slate-800 border border-slate-700 text-slate-100' : 'bg-slate-900 border border-slate-900 text-slate-500 cursor-not-allowed'}`} 
+          <label className="block text-sm text-slate-400 mb-1">
+            Class Level
+          </label>
+          <input
+            value={profileForm.classLevel}
+            readOnly={!editingProfile}
+            onChange={(e) =>
+              setProfileForm({ ...profileForm, classLevel: e.target.value })
+            }
+            className={`w-full px-3 py-2 rounded focus:outline-none focus:border-blue-500 ${editingProfile ? "bg-slate-800 border border-slate-700 text-slate-100" : "bg-slate-900 border border-slate-900 text-slate-500 cursor-not-allowed"}`}
           />
         </div>
 
         <div className="flex gap-3 items-center pt-2">
           {!editingProfile ? (
-            <button 
-              onClick={() => setEditingProfile(true)} 
+            <button
+              onClick={() => setEditingProfile(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 transition"
             >
               Edit Profile
             </button>
           ) : (
             <>
-              <button 
-                onClick={handleSaveProfile} 
+              <button
+                onClick={handleSaveProfile}
                 className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 transition"
               >
                 Save
               </button>
-              <button 
-                onClick={handleCancelEdit} 
+              <button
+                onClick={handleCancelEdit}
                 className="px-4 py-2 bg-slate-800 text-slate-200 border border-slate-700 rounded cursor-pointer hover:bg-slate-700 transition"
               >
                 Cancel

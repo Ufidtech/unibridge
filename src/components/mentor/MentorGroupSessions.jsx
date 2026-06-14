@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchMentorSessions, createGroupSession } from "../../lib/api/sessions";
+import {
+  fetchMentorSessions,
+  createGroupSession,
+} from "../../lib/api/sessions";
 import GroupSessionCreate from "./GroupSessionCreate";
 import toast from "react-hot-toast";
 
@@ -16,16 +19,10 @@ export default function MentorGroupSessions() {
 
       const data = await fetchMentorSessions();
 
-      setGroupSessions(
-        Array.isArray(data.sessions)
-          ? data.sessions
-          : []
-      );
+      setGroupSessions(Array.isArray(data.sessions) ? data.sessions : []);
     } catch (err) {
       console.error(err);
-      setGroupSessionsError(
-        err.message || "Failed to load sessions"
-      );
+      setGroupSessionsError(err.message || "Failed to load sessions");
     } finally {
       setLoadingGroupSessions(false);
     }
@@ -38,53 +35,34 @@ export default function MentorGroupSessions() {
   async function handleCreateSession(groupForm) {
     try {
       const sessionDateTime = new Date(groupForm.datetime);
+      const sessionDate = `${sessionDateTime.getFullYear()}-${String(sessionDateTime.getMonth() + 1).padStart(2, "0")}-${String(sessionDateTime.getDate()).padStart(2, "0")}`;
+      const sessionTime = `${String(sessionDateTime.getHours()).padStart(2, "0")}:${String(sessionDateTime.getMinutes()).padStart(2, "0")}`;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
       await createGroupSession({
         topic: groupForm.title.trim(),
-
         notes: groupForm.description.trim(),
-
-        sessionDate: sessionDateTime
-          .toISOString()
-          .split("T")[0],
-
-        sessionTime: sessionDateTime
-          .toTimeString()
-          .slice(0, 5),
-
-        timezone:
-          Intl.DateTimeFormat()
-            .resolvedOptions()
-            .timeZone,
-
-        maxParticipants:
-          Number(groupForm.capacity) || 50,
+        sessionDate,
+        sessionTime,
+        timezone,
+        maxParticipants: Number(groupForm.capacity) || 50,
       });
 
-      toast.success(
-        "Session created successfully"
-      );
+      toast.success("Session created successfully");
 
       setShowGroupCreate(false);
 
       await loadGroupSessions();
     } catch (err) {
-      toast.error(
-        err.message ||
-          "Failed to create session"
-      );
+      toast.error(err.message || "Failed to create session");
     }
   }
-
-  
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-100">
-          Group Sessions
-        </h2>
+        <h2 className="text-2xl font-bold text-slate-100">Group Sessions</h2>
 
         <button
           onClick={() => setShowGroupCreate(true)}
@@ -118,22 +96,16 @@ export default function MentorGroupSessions() {
 
       {/* Error */}
       {groupSessionsError && (
-        <div className="text-red-400">
-          {groupSessionsError}
-        </div>
+        <div className="text-red-400">{groupSessionsError}</div>
       )}
 
       {/* Loading */}
       {loadingGroupSessions ? (
-        <div className="text-slate-400">
-          Loading sessions...
-        </div>
+        <div className="text-slate-400">Loading sessions...</div>
       ) : groupSessions.length === 0 ? (
-        <div className="text-slate-500">
-          No group sessions created yet.
-        </div>
+        <div className="text-slate-500">No group sessions created yet.</div>
       ) : (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {groupSessions.map((session) => (
             <div
               key={session.id}
@@ -146,35 +118,24 @@ export default function MentorGroupSessions() {
 
               {/* Notes */}
               <p className="text-slate-400 mt-2 text-sm">
-                {session.notes ||
-                  "No description provided"}
+                {session.notes || "No description provided"}
               </p>
 
               {/* Session Info */}
               <div className="mt-4 space-y-2 text-sm">
-                <div className="text-slate-300">
-                  📅 {session.sessionDate}
-                </div>
+                <div className="text-slate-300">📅 {session.sessionDate}</div>
+
+                <div className="text-slate-300">⏰ {session.sessionTime}</div>
 
                 <div className="text-slate-300">
-                  ⏰ {session.sessionTime}
-                </div>
-
-                <div className="text-slate-300">
-                  👥{" "}
-                  {
-                    session.registeredMentees
-                      ?.length
-                  }
-                  /
+                  👥 {session.registeredMentees?.length}/
                   {session.maxParticipants}
                 </div>
 
                 <div>
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium ${
-                      session.status ===
-                      "OPEN"
+                      session.status === "OPEN"
                         ? "bg-green-500/20 text-green-400"
                         : "bg-slate-700 text-slate-300"
                     }`}
@@ -185,10 +146,7 @@ export default function MentorGroupSessions() {
 
                 {session.meetingProvider && (
                   <div className="text-slate-400 text-xs">
-                    Provider:{" "}
-                    {
-                      session.meetingProvider
-                    }
+                    Provider: {session.meetingProvider}
                   </div>
                 )}
               </div>
@@ -206,7 +164,6 @@ export default function MentorGroupSessions() {
                   </a>
                 </div>
               )}
-              
             </div>
           ))}
         </div>

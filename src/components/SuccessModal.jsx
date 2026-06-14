@@ -1,65 +1,132 @@
 import { useState, useEffect } from "react";
 
+function normalizePrepSheet(aiPrepSheet) {
+  if (!aiPrepSheet) return null;
+
+  if (typeof aiPrepSheet === "string") {
+    return { summary: aiPrepSheet, sections: [] };
+  }
+
+  if (typeof aiPrepSheet === "object") {
+    return {
+      summary:
+        aiPrepSheet.summary ||
+        aiPrepSheet.title ||
+        "AI-generated prep guidance",
+      sections: Array.isArray(aiPrepSheet.sections) ? aiPrepSheet.sections : [],
+      checklist: Array.isArray(aiPrepSheet.checklist)
+        ? aiPrepSheet.checklist
+        : [],
+      bullets: Array.isArray(aiPrepSheet.bullets) ? aiPrepSheet.bullets : [],
+      rawMarkdown:
+        typeof aiPrepSheet.rawMarkdown === "string"
+          ? aiPrepSheet.rawMarkdown
+          : "",
+    };
+  }
+
+  return null;
+}
+
+function extractChecklistFromMarkdown(markdown) {
+  if (typeof markdown !== "string") return [];
+
+  return markdown
+    .split("\n")
+    .filter(
+      (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
+    )
+    .map((line, index) => ({
+      id: index + 1,
+      text: line
+        .replace(/^[-*]\s*/, "")
+        .replace(/\*\*/g, "")
+        .trim(),
+      completed: false,
+    }));
+}
+
 export default function SuccessModal({
   sessionDetails = {
     mentorName: "Umar Farooq",
     date: "2026-05-15",
     time: "2:00 PM",
     meetLink: "https://meet.google.com/abc-defg-hij",
-    aiPrepSheet: "", // Add this to your default props
+    aiPrepSheet: "",
+    bookingGoal: "",
+    aiQuestions: [],
   },
+
   onClose = () => {},
 }) {
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Start with an empty checklist, we will fill it with AI data
+  const prepSheet = normalizePrepSheet(sessionDetails.aiPrepSheet);
   const [checklist, setChecklist] = useState([]);
+  const aiQuestions = Array.isArray(sessionDetails.aiQuestions)
+    ? sessionDetails.aiQuestions
+    : [];
+  const bookingGoal =
+    sessionDetails.bookingGoal ||
+    sessionDetails.goal ||
+    sessionDetails.topic ||
+    "";
 
-  // Dynamically parse the Gemini Markdown into interactive checklist items
   useEffect(() => {
-    if (sessionDetails.aiPrepSheet) {
-      // Split the text by newlines and grab anything that looks like a list item
-      const lines = sessionDetails.aiPrepSheet
-        .split("\n")
-        .filter(
-          (line) => line.trim().startsWith("-") || line.trim().startsWith("*"),
-        );
-
-      if (lines.length > 0) {
-        const dynamicChecklist = lines.map((line, index) => ({
+    if (prepSheet?.checklist?.length) {
+      setChecklist(
+        prepSheet.checklist.map((item, index) => ({
           id: index + 1,
-          // Remove the markdown bullets and bold formatting for a clean UI string
-          text: line
-            .replace(/^[-*]\s*/, "")
-            .replace(/\*\*/g, "")
-            .trim(),
+          text: String(item),
           completed: false,
-        }));
-        setChecklist(dynamicChecklist);
-      } else {
-        // Fallback if the AI returns weird formatting
-        setChecklist([
-          { id: 1, text: "Review the AI prep notes", completed: false },
-        ]);
-      }
+        })),
+      );
+      return;
+    }
+
+    if (prepSheet?.sections?.length) {
+      setChecklist(
+        prepSheet.sections.slice(0, 4).map((section, index) => ({
+          id: index + 1,
+          text: section?.title
+            ? `${section.title}${section.body ? ` — ${section.body}` : ""}`
+            : section?.body || section?.text || `Section ${index + 1}`,
+          completed: false,
+        })),
+      );
+      return;
+    }
+
+    const markdownChecklist = extractChecklistFromMarkdown(
+      prepSheet?.rawMarkdown || sessionDetails.aiPrepSheet,
+    );
+    if (markdownChecklist.length > 0) {
+      setChecklist(markdownChecklist);
+    } else if (prepSheet) {
+      setChecklist([
+        {
+          id: 1,
+          text: prepSheet.summary || "Review the AI prep notes",
+          completed: false,
+        },
+      ]);
     } else {
-      // Default fallback if no AI data is passed
       setChecklist([
         { id: 1, text: "Prepare your notes and questions", completed: false },
         { id: 2, text: "Test your internet connection", completed: false },
       ]);
     }
-  }, [sessionDetails.aiPrepSheet]);
+  }, [prepSheet, sessionDetails.aiPrepSheet]);
 
   // Formatted display for the date (fallback to raw string)
   const formattedDate = (() => {
     try {
-      if (!sessionDetails?.date) return '';
+      if (!sessionDetails?.date) return "";
       const d = new Date(sessionDetails.date);
       if (Number.isNaN(d.getTime())) return sessionDetails.date;
       return d.toLocaleDateString();
     } catch (e) {
-      return sessionDetails.date || '';
+      return sessionDetails.date || "";
     }
   })();
 
@@ -72,13 +139,17 @@ export default function SuccessModal({
         setTimeout(() => setCopiedLink(false), 3000);
       }
     } catch (e) {
-      console.error('Copy failed', e);
+      console.error("Copy failed", e);
     }
   };
 
   // Toggle a checklist item
   const toggleChecklistItem = (id) => {
-    setChecklist((prev) => prev.map((it) => (it.id === id ? { ...it, completed: !it.completed } : it)));
+    setChecklist((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, completed: !it.completed } : it,
+      ),
+    );
   };
 
   return (
@@ -138,7 +209,33 @@ export default function SuccessModal({
             </div>
           </div>
 
+          {bookingGoal && (
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+              <p className="text-slate-400 text-xs font-medium mb-2 uppercase tracking-wide">
+                Booking Goal
+              </p>
+              <p className="text-slate-200 text-sm leading-6">{bookingGoal}</p>
+            </div>
+          )}
+
+          {aiQuestions.length > 0 && (
+            <div className="bg-slate-800/50 border border-blue-600/20 rounded-lg p-4">
+              <p className="flex items-center gap-2 text-blue-400 font-semibold text-sm mb-3">
+                ✨ AI Suggested Questions
+              </p>
+              <ul className="space-y-2">
+                {aiQuestions.map((question, idx) => (
+                  <li key={idx} className="text-slate-300 text-sm flex gap-2">
+                    <span className="text-blue-500">•</span>
+                    <span>{question}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Google Meet Link */}
+
           <div>
             <p className="text-slate-300 font-semibold text-sm mb-2">
               Google Meet Link
@@ -163,11 +260,23 @@ export default function SuccessModal({
             </div>
           </div>
 
-          {/* AI Prep Sheet */}
+          {/* Session Summary */}
           <div>
             <p className="flex items-center gap-2 text-slate-300 font-semibold text-sm mb-3">
-              ✨ AI Prep Sheet
+              ✨ Session Summary
             </p>
+
+            {prepSheet?.summary && (
+              <div className="mb-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+                <p className="text-xs uppercase tracking-wide text-emerald-300 mb-2">
+                  Summary
+                </p>
+                <p className="text-slate-200 text-sm leading-6">
+                  {prepSheet.summary}
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               {checklist.map((item) => (
                 <button

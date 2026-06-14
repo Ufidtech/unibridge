@@ -11,6 +11,9 @@ export default function MentorRescheduleModal({
   onClose = () => {},
 }) {
   const [dateTime, setDateTime] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(initialDate || "");
+  const [selectedTime, setSelectedTime] = useState(initialTime || "");
+
   const [timezone, setTimezone] = useState("");
   const [error, setError] = useState("");
 
@@ -32,6 +35,8 @@ export default function MentorRescheduleModal({
           }`,
         );
         setDateTime(Number.isNaN(nextDateTime.getTime()) ? null : nextDateTime);
+        setSelectedDate(initialDate);
+        setSelectedTime(initialTime.slice(0, 5));
       } catch {
         setDateTime(null);
       }
@@ -48,8 +53,9 @@ export default function MentorRescheduleModal({
       return;
     }
 
-    const sessionDate = dateTime.toISOString().split("T")[0];
-    const sessionTime = dateTime.toTimeString().slice(0, 5);
+    const sessionDate = selectedDate;
+    const sessionTime = selectedTime;
+
     const datetime = toISODateTime({ sessionDate, sessionTime, timezone });
 
     if (!datetime) {
@@ -93,7 +99,18 @@ export default function MentorRescheduleModal({
 
           <DatePicker
             selected={dateTime}
-            onChange={(date) => setDateTime(date)}
+            onChange={(date) => {
+              setDateTime(date);
+              if (date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                const hours = String(date.getHours()).padStart(2, "0");
+                const minutes = String(date.getMinutes()).padStart(2, "0");
+                setSelectedDate(`${year}-${month}-${day}`);
+                setSelectedTime(`${hours}:${minutes}`);
+              }
+            }}
             showTimeSelect
             timeFormat="HH:mm"
             timeIntervals={15}

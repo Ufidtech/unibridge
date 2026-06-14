@@ -95,7 +95,10 @@ export default function MentorProfile({
                 step="1"
                 value={profileForm.sessionPrice || ""}
                 onChange={(e) =>
-                  setProfileForm({ ...profileForm, sessionPrice: e.target.value })
+                  setProfileForm({
+                    ...profileForm,
+                    sessionPrice: e.target.value,
+                  })
                 }
                 className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded text-slate-100 focus:outline-none focus:border-blue-500"
                 placeholder="e.g., 5000"
@@ -263,6 +266,10 @@ export default function MentorProfile({
                     {fullMentorProfile?.sessionPrice
                       ? `₦${Number(fullMentorProfile.sessionPrice).toFixed(2)}`
                       : "Not set"}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    This is the base price used for freemium and OPay-style
+                    checkout.
                   </p>
                 </div>
 

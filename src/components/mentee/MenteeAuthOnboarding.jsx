@@ -89,8 +89,9 @@ export default function MenteeAuthOnboarding({
       name: formData.fullName,
       email: formData.email,
       password: formData.password,
-      school: null,
+      school: "",
       classLevel: formData.studentClass,
+      studentClass: formData.studentClass,
       dreamCourse: formData.dreamCourse,
       selectedVibes: formData.selectedVibes,
     };
@@ -98,7 +99,10 @@ export default function MenteeAuthOnboarding({
     registerMentee(payload)
       .then(({ user, alreadyExisted }) => {
         try {
-          if (user) localStorage.setItem("menteeData", JSON.stringify(user));
+          if (user) {
+            localStorage.setItem("menteeData", JSON.stringify(user));
+            localStorage.setItem("currentPage", "/mentee-dashboard");
+          }
         } catch {
           void 0;
         }
@@ -107,13 +111,7 @@ export default function MenteeAuthOnboarding({
         // the `user` (may be null when alreadyExisted fallback was used).
         setError(null);
         setLoading(false);
-        if (alreadyExisted) {
-          setError("Account exists — signed in successfully.");
-          setTimeout(() => onComplete(user), 800);
-        } else {
-          setError("Account created — redirecting to your dashboard.");
-          setTimeout(() => onComplete(user), 800);
-        }
+        setTimeout(() => onComplete(user), 800);
       })
       .catch((err) => {
         setError(err.message || "Registration failed");
@@ -262,7 +260,7 @@ export default function MenteeAuthOnboarding({
                 </button>
               </p>
               {/* Error Message */}
-              {error && (
+              {error && currentStep === 1 && (
                 <div className="p-4 bg-red-900/20 border border-red-500 rounded-lg text-red-300 text-sm">
                   {error}
                 </div>

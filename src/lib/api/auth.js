@@ -208,7 +208,10 @@ export async function fetchMe() {
       throw new Error("Unable to fetch account.");
     }
 
-    return res.json();
+    const data = await res.json();
+    console.log("[fetchMe] response:", data);
+    return data;
+
   } catch {
     throw new Error("Unable to fetch account.");
   }
@@ -327,10 +330,10 @@ export async function logout() {
     await auth.signOut();
 
     localStorage.removeItem("idToken");
-  localStorage.removeItem("adminData");
-  localStorage.removeItem("menteeData");
-  localStorage.removeItem("mentorData");
-  localStorage.removeItem("currentPage");
+    localStorage.removeItem("adminData");
+    localStorage.removeItem("menteeData");
+    localStorage.removeItem("mentorData");
+    localStorage.removeItem("currentPage");
 
     sessionStorage.clear();
 

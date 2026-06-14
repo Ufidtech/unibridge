@@ -34,13 +34,15 @@ export function toISODateTime({
     : FALLBACK_TIMEZONE;
 
   try {
-    const candidate = new Date(`${sessionDate}T${sessionTime}:00`);
+    const [year, month, day] = sessionDate.split("-").map(Number);
+    const [hour, minute] = sessionTime.split(":").map(Number);
 
-    if (Number.isNaN(candidate.getTime())) {
-      console.error("❌ Invalid date/time:", { sessionDate, sessionTime });
+    if ([year, month, day, hour, minute].some((value) => !Number.isFinite(value))) {
+      console.error("❌ Invalid date/time parts:", { sessionDate, sessionTime });
       return null;
     }
 
+    const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
     const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: normalizedTimezone,
       year: "numeric",
@@ -50,12 +52,10 @@ export function toISODateTime({
       minute: "2-digit",
       second: "2-digit",
       hourCycle: "h23",
-    }).formatToParts(candidate);
+    }).formatToParts(utcGuess);
 
     const lookup = Object.fromEntries(
-      parts
-        .filter((part) => part.type !== "literal")
-        .map((part) => [part.type, part.value])
+      parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
     );
 
     const renderedDate = `${lookup.year}-${lookup.month}-${lookup.day}`;
@@ -72,7 +72,7 @@ export function toISODateTime({
       return null;
     }
 
-    return candidate.toISOString();
+    return utcGuess.toISOString();
   } catch (error) {
     console.error("🔥 Failed to generate ISO datetime:", error);
     return null;
